@@ -1,0 +1,35 @@
+import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
+import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+
+export type TabParamList = {
+  Home: undefined;
+  Library: { categoryId?: number } | undefined;
+  AddInformation: undefined;
+  ReviewToday: undefined;
+  Settings: undefined;
+};
+
+export type RootStackParamList = {
+  Tabs: NavigatorScreenParams<TabParamList> | undefined;
+  InformationDetails: { informationId: number };
+  EditInformation: { informationId: number };
+  Categories: undefined;
+  ReminderSettings: undefined;
+};
+
+export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
+  RootStackParamList,
+  T
+>;
+
+export type TabScreenProps<T extends keyof TabParamList> = CompositeScreenProps<
+  BottomTabScreenProps<TabParamList, T>,
+  NativeStackScreenProps<RootStackParamList>
+>;
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}

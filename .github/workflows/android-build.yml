@@ -1,0 +1,82 @@
+name: Android APK
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, lint, tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test -- --ci
+
+  build:
+    name: Build release APK
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      # Optional: sign with your upload key. Add these repository secrets
+      # (Settings > Secrets and variables > Actions):
+      #   MKR_UPLOAD_KEYSTORE_BASE64  (base64 of mkr-upload.keystore)
+      #   MKR_UPLOAD_STORE_PASSWORD, MKR_UPLOAD_KEY_ALIAS, MKR_UPLOAD_KEY_PASSWORD
+      # Without them the APK is signed with the debug key (fine for sideloading).
+      - name: Decode upload keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.MKR_UPLOAD_KEYSTORE_BASE64 }}
+        if: env.KEYSTORE_BASE64 != ''
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mkr-upload.keystore"
+          echo "MKR_UPLOAD_STORE_FILE=$RUNNER_TEMP/mkr-upload.keystore" >> "$GITHUB_ENV"
+
+      - name: Assemble release APK
+        working-directory: android
+        env:
+          MKR_UPLOAD_STORE_PASSWORD: ${{ secrets.MKR_UPLOAD_STORE_PASSWORD }}
+          MKR_UPLOAD_KEY_ALIAS: ${{ secrets.MKR_UPLOAD_KEY_ALIAS }}
+          MKR_UPLOAD_KEY_PASSWORD: ${{ secrets.MKR_UPLOAD_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MyKnowledgeReminder-${{ github.sha }}
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
