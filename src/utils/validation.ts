@@ -1,5 +1,6 @@
 import {
   MAX_CATEGORY_NAME_LENGTH,
+  MAX_REPEAT_INTERVAL,
   MAX_CONTENT_LENGTH,
   MAX_SOURCE_LENGTH,
   MAX_TITLE_LENGTH,
@@ -44,6 +45,11 @@ export function validateInformation(
       errors.reminder = 'Reminder date is invalid.';
     } else if (requireFutureOnce && reminder.frequency === 'once' && reminder.scheduledAt <= now) {
       errors.reminder = 'A one-time reminder must be in the future.';
+    }
+    const repeating = ['hourly', 'daily', 'weekly', 'monthly'].includes(reminder.frequency);
+    const interval = reminder.repeatInterval ?? 1;
+    if (repeating && (!Number.isInteger(interval) || interval < 1 || interval > MAX_REPEAT_INTERVAL)) {
+      errors.repeatInterval = `Enter a whole number between 1 and ${MAX_REPEAT_INTERVAL}.`;
     }
   }
   return errors;

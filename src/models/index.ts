@@ -3,10 +3,11 @@
  * All timestamps are stored and handled as epoch milliseconds (local device clock).
  */
 
-export type ReminderFrequency = 'once' | 'daily' | 'weekly' | 'monthly' | 'spaced';
+export type ReminderFrequency = 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'spaced';
 
 export const REMINDER_FREQUENCIES: ReminderFrequency[] = [
   'once',
+  'hourly',
   'daily',
   'weekly',
   'monthly',
@@ -41,10 +42,12 @@ export interface Reminder {
   informationId: number;
   /**
    * once / spaced: the exact moment of the next review.
-   * daily / weekly / monthly: the anchor (first occurrence) of the recurring series.
+   * hourly / daily / weekly / monthly: the anchor (first occurrence) of the recurring series.
    */
   scheduledAt: number;
   frequency: ReminderFrequency;
+  /** Repeating reminders: every N hours/days/weeks/months (1 = every hour/day/...). */
+  repeatInterval: number;
   isActive: boolean;
   notificationId: string | null;
   /** Index of the next interval to use in the smart (spaced) schedule. */
@@ -82,6 +85,8 @@ export interface InformationInput {
 export interface ReminderInput {
   enabled: boolean;
   frequency: ReminderFrequency;
+  /** Repeating reminders: every N units (defaults to 1). */
+  repeatInterval?: number;
   /** Date + time of the first reminder (for spaced, only the time-of-day is used). */
   scheduledAt: number;
 }

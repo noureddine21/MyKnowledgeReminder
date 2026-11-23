@@ -45,6 +45,8 @@ export function ensureChannel(): Promise<void> {
 
 function repeatFrequencyFor(reminder: Reminder): RepeatFrequency | undefined {
   switch (reminder.frequency) {
+    case 'hourly':
+      return RepeatFrequency.HOURLY;
     case 'daily':
       return RepeatFrequency.DAILY;
     case 'weekly':
@@ -110,6 +112,7 @@ async function createTrigger(
   notification: Notification,
   timestamp: number,
   repeatFrequency: RepeatFrequency | undefined,
+  repeatInterval = 1,
 ): Promise<void> {
   await ensureChannel();
   const exact = await canUseExactAlarms();
@@ -117,6 +120,8 @@ async function createTrigger(
     type: TriggerType.TIMESTAMP,
     timestamp,
     repeatFrequency,
+    // Only valid together with a repeat frequency ("every N hours/days/...").
+    ...(repeatFrequency !== undefined && repeatInterval > 1 ? { repeatInterval } : {}),
     alarmManager: {
       type: useExact ? AlarmType.SET_EXACT_AND_ALLOW_WHILE_IDLE : AlarmType.SET_AND_ALLOW_WHILE_IDLE,
     },
@@ -162,6 +167,7 @@ export async function scheduleReminderNotification(
     buildReminderNotification(target, notificationId),
     timestamp,
     repeatFrequencyFor(target.reminder),
+    target.reminder.repeatInterval,
   );
   return notificationId;
 }

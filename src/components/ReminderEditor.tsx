@@ -1,10 +1,11 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { FREQUENCY_LABELS } from '../constants';
+import { StyleSheet, TextInput, View } from 'react-native';
+import { FREQUENCY_LABELS, MAX_REPEAT_INTERVAL } from '../constants';
 import { REMINDER_FREQUENCIES, type ReminderFrequency, type ReminderInput } from '../models';
-import { spacedReviewDates } from '../services/reviewSchedule';
+import { isRepeating, spacedReviewDates } from '../services/reviewSchedule';
 import { useAppTheme } from '../theme';
 import { formatDate, formatTime } from '../utils/date';
+import { formatRecurrence, repeatUnit } from '../utils/recurrence';
 import { AppText } from './AppText';
 import { Card } from './Card';
 import { Chip } from './Chip';
@@ -20,11 +21,14 @@ interface Props {
   intervals: number[];
   now: number;
   error?: string;
+  /** Error for the "every N" field. */
+  intervalError?: string;
 }
 
 const FREQUENCY_ICONS: Record<ReminderFrequency, string> = {
   spaced: 'brain',
   once: 'calendar-clock',
+  hourly: 'clock-outline',
   daily: 'repeat',
   weekly: 'calendar-week',
   monthly: 'calendar-month',
@@ -33,20 +37,23 @@ const FREQUENCY_ICONS: Record<ReminderFrequency, string> = {
 function describeRepeat(value: ReminderInput): string {
   const time = formatTime(value.scheduledAt);
   const start = formatDate(value.scheduledAt);
+  const every = formatRecurrence(value.frequency, value.repeatInterval || 1);
   switch (value.frequency) {
+    case 'hourly':
+      return `${every}, starting ${start} at ${time}.`;
     case 'daily':
-      return `Every day at ${time}, starting ${start}.`;
+      return `${every} at ${time}, starting ${start}.`;
     case 'weekly':
-      return `Every week on the same weekday at ${time}, starting ${start}.`;
+      return `${every} on the same weekday at ${time}, starting ${start}.`;
     case 'monthly':
-      return `Every month on the same day at ${time}, starting ${start}.`;
+      return `${every} on the same day at ${time}, starting ${start}.`;
     default:
       return `Once, on ${start} at ${time}.`;
   }
 }
 
-export function ReminderEditor({ value, onChange, createdAt, intervals, now, error }: Props) {
-  const { colors, spacing } = useAppTheme();
+export function ReminderEditor({ value, onChange, createdAt, intervals, now, error, intervalError }: Props) {
+  const { colors, radius, spacing, typography } = useAppTheme();
   const set = (patch: Partial<ReminderInput>) => onChange({ ...value, ...patch });
 
   return (
@@ -112,6 +119,41 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
             </>
           ) : (
             <>
+              {isRepeating(value.frequency) ? (
+                <View style={{ marginBottom: spacing.md }}>
+                  <View style={styles.everyRow}>
+                    <AppText>Every</AppText>
+                    <TextInput
+                      value={value.repeatInterval ? String(value.repeatInterval) : ''}
+                      onChangeText={text => {
+                        const digits = text.replace(/[^0-9]/g, '').slice(0, String(MAX_REPEAT_INTERVAL).length);
+                        set({ repeatInterval: digits ? Number(digits) : 0 });
+                      }}
+                      keyboardType="number-pad"
+                      accessibilityLabel={`Repeat every how many ${repeatUnit(value.frequency, 2)}`}
+                      placeholder="1"
+                      placeholderTextColor={colors.textMuted}
+                      style={[
+                        typography.body,
+                        styles.everyInput,
+                        {
+                          color: colors.text,
+                          backgroundColor: colors.surface,
+                          borderColor: intervalError ? colors.danger : colors.border,
+                          borderRadius: radius.md,
+                          marginHorizontal: spacing.sm,
+                        },
+                      ]}
+                    />
+                    <AppText>{repeatUnit(value.frequency, value.repeatInterval || 2)}</AppText>
+                  </View>
+                  {intervalError ? (
+                    <AppText variant="caption" color={colors.danger} style={{ marginTop: spacing.xs }}>
+                      {intervalError}
+                    </AppText>
+                  ) : null}
+                </View>
+              ) : null}
               <DateTimeField
                 label={value.frequency === 'once' ? 'Reminder date & time' : 'First reminder'}
                 mode="datetime"
@@ -138,6 +180,8 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
 
 const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
+  everyRow: { flexDirection: 'row', alignItems: 'center' },
+  everyInput: { borderWidth: 1, minWidth: 64, minHeight: 44, paddingVertical: 8, textAlign: 'center' },
   dateRow: { flexDirection: 'row', alignItems: 'center' },
   dateText: { marginLeft: 6 },
   past: { textDecorationLine: 'line-through' },

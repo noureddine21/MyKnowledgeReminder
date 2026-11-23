@@ -26,13 +26,14 @@ import { getNextReminderAt, isDueToday } from '../services/reviewSchedule';
 import { setReminderActive } from '../services/reviewService';
 import { useAppTheme } from '../theme';
 import { formatDateTime, formatRelative } from '../utils/date';
+import { formatRecurrence } from '../utils/recurrence';
 import { ValidationError } from '../utils/errors';
 
 function reminderSummary(reminder: Reminder, intervals: number[]): string {
   if (reminder.frequency === 'spaced') {
     return `Smart schedule · review ${Math.min(reminder.spacedStep + 1, intervals.length)} of ${intervals.length}`;
   }
-  return FREQUENCY_LABELS[reminder.frequency];
+  return formatRecurrence(reminder.frequency, reminder.repeatInterval) || FREQUENCY_LABELS[reminder.frequency];
 }
 
 export function InformationDetailsScreen({ route, navigation }: RootStackScreenProps<'InformationDetails'>) {

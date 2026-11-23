@@ -54,7 +54,7 @@ describe('SQLite schema & repositories', () => {
       { title: 'T', content: 'C', categoryId: null, source: null, createdAt: NOW },
       NOW,
     );
-    await repos.reminders.upsert(id, { scheduledAt: NOW + 1, frequency: 'daily', isActive: true, spacedStep: 0, spacedBaseAt: null }, NOW);
+    await repos.reminders.upsert(id, { scheduledAt: NOW + 1, frequency: 'daily', repeatInterval: 1, isActive: true, spacedStep: 0, spacedBaseAt: null }, NOW);
     await repos.reviewHistory.add(id, 'reviewed', NOW);
     await repos.information.delete(id);
     const reminders = await db.execute('SELECT COUNT(*) AS n FROM reminders');
@@ -68,8 +68,8 @@ describe('SQLite schema & repositories', () => {
       { title: 'T', content: 'C', categoryId: null, source: null, createdAt: NOW },
       NOW,
     );
-    await repos.reminders.upsert(id, { scheduledAt: NOW + 1, frequency: 'once', isActive: true, spacedStep: 0, spacedBaseAt: null }, NOW);
-    await repos.reminders.upsert(id, { scheduledAt: NOW + 2, frequency: 'weekly', isActive: true, spacedStep: 0, spacedBaseAt: null }, NOW);
+    await repos.reminders.upsert(id, { scheduledAt: NOW + 1, frequency: 'once', repeatInterval: 1, isActive: true, spacedStep: 0, spacedBaseAt: null }, NOW);
+    await repos.reminders.upsert(id, { scheduledAt: NOW + 2, frequency: 'weekly', repeatInterval: 1, isActive: true, spacedStep: 0, spacedBaseAt: null }, NOW);
     const all = await repos.reminders.findAll();
     expect(all).toHaveLength(1);
     expect(all[0]).toMatchObject({ scheduledAt: NOW + 2, frequency: 'weekly', isActive: true });

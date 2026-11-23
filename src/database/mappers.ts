@@ -44,6 +44,7 @@ export function mapReminder(row: SqlRow, prefix = ''): Reminder {
     informationId: num(row[`${prefix}information_id`]),
     scheduledAt: num(row[`${prefix}scheduled_at`]),
     frequency: str(row[`${prefix}frequency`]) as ReminderFrequency,
+    repeatInterval: num(row[`${prefix}repeat_interval`] ?? 1) || 1,
     isActive: bool(row[`${prefix}is_active`]),
     notificationId: strOrNull(row[`${prefix}notification_id`]),
     spacedStep: num(row[`${prefix}spaced_step`] ?? 0),

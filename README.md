@@ -4,7 +4,7 @@ Offline Android app (React Native CLI + TypeScript) to save what you learn — Q
 technical notes, French vocabulary, quotes — and get reminded to review it.
 
 - 100 % local: SQLite on the device, no backend, no account.
-- Reminders: one-time, daily, weekly, monthly, custom date/time, or a **smart review schedule**
+- Reminders: one-time, custom date/time, **every N hours / days / weeks / months**, or a **smart review schedule**
   (default 1, 3, 7, 30 days after creation, customizable, optional).
 - Local notifications that open the related item when tapped; restored after app restart and device reboot.
 
@@ -68,8 +68,9 @@ information (id PK, title NOT NULL, content NOT NULL,
   INDEX (category_id), INDEX (created_at)
 
 reminders (id PK, information_id UNIQUE → information(id) ON DELETE CASCADE,
-           scheduled_at,            -- once/spaced: next review; daily/weekly/monthly: series anchor
-           frequency CHECK IN ('once','daily','weekly','monthly','spaced'),
+           scheduled_at,            -- once/spaced: next review; hourly/daily/weekly/monthly: series anchor
+           frequency CHECK IN ('once','hourly','daily','weekly','monthly','spaced'),
+           repeat_interval CHECK 1..999,   -- "every N" units (migration 002)
            is_active, notification_id,
            spaced_step, spaced_base_at, last_reviewed_at,
            created_at, updated_at)
@@ -88,8 +89,12 @@ Never edit a released migration.
 ## Reminder rules
 
 - **One-time / custom**: fires once; "Mark as reviewed" completes it.
-- **Daily / weekly / monthly**: the OS repeats the notification. The item appears in *Review Today*
-  on each occurrence day (and stays there, marked *overdue*, until reviewed).
+- **Every N hours / days / weeks / months** (`hourly`/`daily`/`weekly`/`monthly` + `repeat_interval`):
+  the OS repeats the notification natively (AlarmManager). Day-based series appear in *Review Today*
+  on each occurrence day (and stay there, marked *overdue*, until reviewed). Hourly series appear once
+  an occurrence has fired, and a review counts for that occurrence only.
+- Repeats more frequent than every hour are not offered: Android does not allow reliable repeating
+  alarms below 15 minutes, and such repeats would be delivered late.
 - **Smart schedule**: reviews at base date + each interval (time of day chosen by the user).
   Reviewing moves to the next step; a late step is moved to the next available slot;
   after the last step the reminder completes. Editing only the text keeps the progress.

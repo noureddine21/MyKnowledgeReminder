@@ -3,9 +3,9 @@
  *
  * Semantics:
  *  - once / spaced: `scheduledAt` is the exact time of the next review.
- *  - daily / weekly / monthly: `scheduledAt` is the anchor of a recurring series;
- *    occurrences are anchor + k * period. The OS keeps firing the repeating
- *    notification, and the app computes occurrences on the fly.
+ *  - hourly / daily / weekly / monthly: `scheduledAt` is the anchor of a recurring series;
+ *    occurrences are anchor + k * interval * unit ("every N hours/days/weeks/months").
+ *    The OS keeps firing the repeating notification, and the app computes occurrences on the fly.
  */
 import type { Reminder, ReminderFrequency } from '../models';
 import {
@@ -17,39 +17,58 @@ import {
   startOfDay,
 } from '../utils/date';
 
-type RepeatingFrequency = 'daily' | 'weekly' | 'monthly';
+type RepeatingFrequency = 'hourly' | 'daily' | 'weekly' | 'monthly';
+
+const HOUR_MS = 3_600_000;
 
 export function isRepeating(frequency: ReminderFrequency): frequency is RepeatingFrequency {
-  return frequency === 'daily' || frequency === 'weekly' || frequency === 'monthly';
+  return (
+    frequency === 'hourly' || frequency === 'daily' || frequency === 'weekly' || frequency === 'monthly'
+  );
 }
 
-export function occurrence(anchor: number, frequency: RepeatingFrequency, index: number): number {
+function safeInterval(interval: number | undefined): number {
+  return interval && Number.isInteger(interval) && interval > 0 ? interval : 1;
+}
+
+/** k-th occurrence of a series repeating every `interval` units. */
+export function occurrence(
+  anchor: number,
+  frequency: RepeatingFrequency,
+  index: number,
+  interval = 1,
+): number {
+  const steps = index * safeInterval(interval);
   switch (frequency) {
+    case 'hourly':
+      return anchor + steps * HOUR_MS;
     case 'daily':
-      return addDays(anchor, index);
+      return addDays(anchor, steps);
     case 'weekly':
-      return addDays(anchor, index * 7);
+      return addDays(anchor, steps * 7);
     case 'monthly':
-      return addMonths(anchor, index);
+      return addMonths(anchor, steps);
   }
 }
 
 /** Largest k such that occurrence(k) <= t. Assumes anchor <= t. */
-function latestIndex(anchor: number, frequency: RepeatingFrequency, t: number): number {
-  let k: number;
-  if (frequency === 'monthly') {
+function latestIndex(anchor: number, frequency: RepeatingFrequency, t: number, interval: number): number {
+  let units: number;
+  if (frequency === 'hourly') {
+    units = Math.floor((t - anchor) / HOUR_MS);
+  } else if (frequency === 'monthly') {
     const a = new Date(anchor);
     const b = new Date(t);
-    k = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+    units = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
   } else {
     const days = diffInCalendarDays(anchor, t);
-    k = frequency === 'daily' ? days : Math.floor(days / 7);
+    units = frequency === 'daily' ? days : Math.floor(days / 7);
   }
-  k = Math.max(0, k);
-  while (k > 0 && occurrence(anchor, frequency, k) > t) {
+  let k = Math.max(0, Math.floor(units / interval));
+  while (k > 0 && occurrence(anchor, frequency, k, interval) > t) {
     k--;
   }
-  while (occurrence(anchor, frequency, k + 1) <= t) {
+  while (occurrence(anchor, frequency, k + 1, interval) <= t) {
     k++;
   }
   return k;
@@ -59,22 +78,26 @@ export function latestOccurrenceOnOrBefore(
   anchor: number,
   frequency: RepeatingFrequency,
   t: number,
+  interval = 1,
 ): number | null {
   if (anchor > t) {
     return null;
   }
-  return occurrence(anchor, frequency, latestIndex(anchor, frequency, t));
+  const n = safeInterval(interval);
+  return occurrence(anchor, frequency, latestIndex(anchor, frequency, t, n), n);
 }
 
 export function nextOccurrenceAfter(
   anchor: number,
   frequency: RepeatingFrequency,
   after: number,
+  interval = 1,
 ): number {
   if (anchor > after) {
     return anchor;
   }
-  return occurrence(anchor, frequency, latestIndex(anchor, frequency, after) + 1);
+  const n = safeInterval(interval);
+  return occurrence(anchor, frequency, latestIndex(anchor, frequency, after, n) + 1, n);
 }
 
 /** The review moment the user currently owes for this reminder (may be in the past = overdue). */
@@ -85,8 +108,10 @@ export function getDueAt(reminder: Reminder, now: number): number | null {
   if (!isRepeating(reminder.frequency)) {
     return reminder.scheduledAt;
   }
+  // Hourly series: the occurrence that already fired. Day-based series: today's occurrence.
+  const limit = reminder.frequency === 'hourly' ? now : endOfDay(now);
   return (
-    latestOccurrenceOnOrBefore(reminder.scheduledAt, reminder.frequency, endOfDay(now)) ??
+    latestOccurrenceOnOrBefore(reminder.scheduledAt, reminder.frequency, limit, reminder.repeatInterval) ??
     reminder.scheduledAt
   );
 }
@@ -96,6 +121,10 @@ export function isDueToday(reminder: Reminder, now: number): boolean {
   const dueAt = getDueAt(reminder, now);
   if (dueAt === null || dueAt > endOfDay(now)) {
     return false;
+  }
+  if (reminder.frequency === 'hourly') {
+    // Due once the occurrence fired; a review counts for that occurrence only.
+    return dueAt <= now && (reminder.lastReviewedAt === null || reminder.lastReviewedAt < dueAt);
   }
   if (isRepeating(reminder.frequency)) {
     // A review done on the occurrence day (or later) counts for that occurrence.
@@ -115,7 +144,7 @@ export function getNextReminderAt(reminder: Reminder, now: number): number | nul
     return null;
   }
   if (isRepeating(reminder.frequency)) {
-    return nextOccurrenceAfter(reminder.scheduledAt, reminder.frequency, now);
+    return nextOccurrenceAfter(reminder.scheduledAt, reminder.frequency, now, reminder.repeatInterval);
   }
   return reminder.scheduledAt;
 }
@@ -129,7 +158,7 @@ export function getNotificationTimestamp(reminder: Reminder, now: number): numbe
     return null;
   }
   if (isRepeating(reminder.frequency)) {
-    return nextOccurrenceAfter(reminder.scheduledAt, reminder.frequency, now);
+    return nextOccurrenceAfter(reminder.scheduledAt, reminder.frequency, now, reminder.repeatInterval);
   }
   return reminder.scheduledAt > now ? reminder.scheduledAt : null;
 }

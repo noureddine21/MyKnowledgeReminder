@@ -60,6 +60,7 @@ function formFromItem(item: InformationItem, settings: AppSettings): FormState {
       ? {
           enabled: item.reminder.isActive,
           frequency: item.reminder.frequency,
+          repeatInterval: item.reminder.repeatInterval,
           scheduledAt: item.reminder.isActive ? item.reminder.scheduledAt : base.reminder.scheduledAt,
         }
       : { ...base.reminder, enabled: false },
@@ -115,10 +116,13 @@ function InformationForm({ informationId, onSaved }: Props) {
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm(prev => ({ ...prev, [key]: value }));
-    if (errors[key as string] || (key === 'reminder' && errors.reminder)) {
+    if (errors[key as string] || (key === 'reminder' && errors.repeatInterval)) {
       setErrors(prev => {
         const next = { ...prev };
         delete next[key as string];
+        if (key === 'reminder') {
+          delete next.repeatInterval;
+        }
         return next;
       });
     }
@@ -238,6 +242,7 @@ function InformationForm({ informationId, onSaved }: Props) {
         intervals={settings.reviewIntervals}
         now={Date.now()}
         error={errors.reminder}
+        intervalError={errors.repeatInterval}
       />
 
       {Object.keys(errors).length > 0 ? (

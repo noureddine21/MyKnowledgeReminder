@@ -13,7 +13,7 @@ import { NotFoundError } from '../utils/errors';
 import { assertValidInformation } from '../utils/validation';
 import { cancelNotification, notificationIdFor, snoozeNotificationIdFor } from './notificationService';
 import { syncItemNotification } from './reminderSync';
-import { getNextReminderAt, initialSpacedSchedule } from './reviewSchedule';
+import { getNextReminderAt, initialSpacedSchedule, isRepeating } from './reviewSchedule';
 
 export interface SaveResult {
   id: number;
@@ -28,6 +28,9 @@ export function isReminderUnchanged(
   createdAt: number,
 ): boolean {
   if (!existing || !existing.isActive || !input.enabled || existing.frequency !== input.frequency) {
+    return false;
+  }
+  if (isRepeating(input.frequency) && existing.repeatInterval !== (input.repeatInterval ?? 1)) {
     return false;
   }
   if (input.frequency === 'spaced') {
@@ -51,6 +54,7 @@ export function buildReminderData(
       return {
         scheduledAt: schedule.scheduledAt,
         frequency: 'spaced',
+        repeatInterval: 1,
         isActive: true,
         spacedStep: schedule.step,
         spacedBaseAt: createdAt,
@@ -60,6 +64,7 @@ export function buildReminderData(
   return {
     scheduledAt: input.scheduledAt,
     frequency: input.frequency === 'spaced' ? 'once' : input.frequency,
+    repeatInterval: isRepeating(input.frequency) ? input.repeatInterval ?? 1 : 1,
     isActive: true,
     spacedStep: 0,
     spacedBaseAt: null,
@@ -102,6 +107,7 @@ export async function saveInformation(
           ? {
               scheduledAt: existing.reminder.scheduledAt,
               frequency: existing.reminder.frequency,
+              repeatInterval: existing.reminder.repeatInterval,
               isActive: true,
               spacedStep: existing.reminder.spacedStep,
               spacedBaseAt: existing.reminder.spacedBaseAt,

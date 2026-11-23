@@ -20,6 +20,7 @@ function reminder(patch: Partial<Reminder>): Reminder {
     informationId: 1,
     scheduledAt: at(2026, 1, 10),
     frequency: 'once',
+    repeatInterval: 1,
     isActive: true,
     notificationId: null,
     spacedStep: 0,

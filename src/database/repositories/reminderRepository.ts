@@ -6,6 +6,7 @@ import type { SqlExecutor } from '../types';
 export interface ReminderData {
   scheduledAt: number;
   frequency: ReminderFrequency;
+  repeatInterval: number;
   isActive: boolean;
   spacedStep: number;
   spacedBaseAt: number | null;
@@ -44,11 +45,13 @@ export class ReminderRepository {
     return withDbError('save the reminder', async () => {
       await this.db.execute(
         `INSERT INTO reminders
-           (information_id, scheduled_at, frequency, is_active, spaced_step, spaced_base_at, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           (information_id, scheduled_at, frequency, repeat_interval, is_active, spaced_step, spaced_base_at,
+            created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(information_id) DO UPDATE SET
            scheduled_at = excluded.scheduled_at,
            frequency = excluded.frequency,
+           repeat_interval = excluded.repeat_interval,
            is_active = excluded.is_active,
            spaced_step = excluded.spaced_step,
            spaced_base_at = excluded.spaced_base_at,
@@ -57,6 +60,7 @@ export class ReminderRepository {
           informationId,
           data.scheduledAt,
           data.frequency,
+          data.repeatInterval,
           data.isActive ? 1 : 0,
           data.spacedStep,
           data.spacedBaseAt,

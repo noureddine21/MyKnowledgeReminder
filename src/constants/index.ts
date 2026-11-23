@@ -66,11 +66,15 @@ export const CATEGORY_ICONS = [
 
 export const FREQUENCY_LABELS: Record<ReminderFrequency, string> = {
   once: 'One time',
+  hourly: 'Hourly',
   daily: 'Daily',
   weekly: 'Weekly',
   monthly: 'Monthly',
   spaced: 'Smart schedule',
 };
+
+/** Upper bound for "every N hours/days/weeks/months". */
+export const MAX_REPEAT_INTERVAL = 999;
 
 export const MAX_TITLE_LENGTH = 150;
 export const MAX_CONTENT_LENGTH = 20000;

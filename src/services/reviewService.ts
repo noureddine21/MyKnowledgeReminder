@@ -179,7 +179,7 @@ export async function rescheduleReview(
     } else {
       await tx.reminders.upsert(
         informationId,
-        { scheduledAt: at, frequency: 'once', isActive: true, spacedStep: 0, spacedBaseAt: null },
+        { scheduledAt: at, frequency: 'once', repeatInterval: 1, isActive: true, spacedStep: 0, spacedBaseAt: null },
         now,
       );
     }
