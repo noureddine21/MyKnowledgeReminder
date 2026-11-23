@@ -6,6 +6,7 @@ import {
   Chip,
   DateTimeField,
   ErrorView,
+  Icon,
   LoadingView,
   ReminderEditor,
   Screen,
@@ -17,6 +18,7 @@ import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
 import type { AppSettings, InformationItem, ReminderInput } from '../models';
 import type { RootStackScreenProps, TabScreenProps } from '../navigation/types';
+import type { SharedDraft } from '../services/shareIntake';
 import { listCategories } from '../services/categoryService';
 import { getInformation, saveInformation } from '../services/informationService';
 import { useAppTheme } from '../theme';
@@ -70,10 +72,13 @@ function formFromItem(item: InformationItem, settings: AppSettings): FormState {
 interface Props {
   informationId?: number;
   onSaved: (id: number, isNew: boolean) => void;
+  /** Content shared from another app; applied each time `shareId` changes. */
+  shared?: SharedDraft;
+  shareId?: number;
 }
 
-function InformationForm({ informationId, onSaved }: Props) {
-  const { colors, spacing } = useAppTheme();
+function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
+  const { colors, radius, spacing } = useAppTheme();
   const { settings } = useSettings();
   const { ensurePermission } = useNotificationPermission();
   const isEdit = informationId !== undefined;
@@ -83,6 +88,18 @@ function InformationForm({ informationId, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(isEdit ? 'loading' : 'ready');
   const [loadError, setLoadError] = useState('');
+  const [fromShare, setFromShare] = useState(false);
+
+  useEffect(() => {
+    if (!shared || shareId === undefined) {
+      return;
+    }
+    setForm({ ...emptyForm(settings), title: shared.title, content: shared.content, source: shared.source ?? '' });
+    setErrors({});
+    setFromShare(true);
+    // Only a new share (new shareId) replaces the form.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shareId]);
 
   const categoriesLoader = useCallback(() => listCategories(), []);
   const { data: categories } = useFocusData(categoriesLoader, 'form:categories');
@@ -152,6 +169,7 @@ function InformationForm({ informationId, onSaved }: Props) {
       }
       if (!isEdit) {
         setForm(emptyForm(settings));
+        setFromShare(false);
       }
       onSaved(result.id, !isEdit);
     } catch (error) {
@@ -175,6 +193,19 @@ function InformationForm({ informationId, onSaved }: Props) {
 
   return (
     <Screen keyboard>
+      {fromShare ? (
+        <View
+          style={[
+            styles.shareNotice,
+            { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
+          ]}
+        >
+          <Icon name="share-variant" size={18} color={colors.primary} />
+          <AppText variant="small" style={{ marginLeft: spacing.sm, flex: 1 }}>
+            Filled from what you shared. Write the key point to remember in Content, then save.
+          </AppText>
+        </View>
+      ) : null}
       <TextField
         label="Title"
         required
@@ -261,10 +292,15 @@ function InformationForm({ informationId, onSaved }: Props) {
   );
 }
 
-export function AddInformationScreen({ navigation }: TabScreenProps<'AddInformation'>) {
+export function AddInformationScreen({ route, navigation }: TabScreenProps<'AddInformation'>) {
   return (
     <InformationForm
-      onSaved={id => navigation.navigate('InformationDetails', { informationId: id })}
+      shared={route.params?.shared}
+      shareId={route.params?.shareId}
+      onSaved={id => {
+        navigation.setParams({ shared: undefined, shareId: undefined });
+        navigation.navigate('InformationDetails', { informationId: id });
+      }}
     />
   );
 }
@@ -280,4 +316,5 @@ export function EditInformationScreen({ route, navigation }: RootStackScreenProp
 
 const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
+  shareNotice: { flexDirection: 'row', alignItems: 'center' },
 });

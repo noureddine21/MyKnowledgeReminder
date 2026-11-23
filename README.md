@@ -171,6 +171,23 @@ Each reminder notification:
 If an action fails (e.g. the item was deleted), a notification asks to open the app instead of failing silently.
 Screens that are open refresh automatically after an action.
 
+## Share from other apps (Instagram, YouTube, Chrome…)
+
+In any app, tap **Share → Add to My Knowledge Reminder**. The app opens the **Add** form pre-filled:
+
+- the shared link goes to **Source** (e.g. the Instagram reel URL);
+- the title is the page title when the app provides one, else the first line of the shared text,
+  else a name like "Instagram reel" / "YouTube video";
+- remaining shared text goes to **Content**.
+
+Nothing is saved automatically: you write the key point to remember and tap **Save**.
+Only what the other app shares is used (usually just a link): the app stays offline and does
+not download or read the reel itself.
+
+How it works: `MainActivity` receives the `ACTION_SEND` (`text/plain`) intent and converts it into an
+internal `myknowledgereminder://share?text=…&subject=…` link, which `src/services/shareIntake.ts`
+receives through React Native's `Linking` API (cold start and while running).
+
 ## Android notification notes (no exact-delivery promise)
 
 - Android 13+: the app asks for notification permission when you first save a reminder.

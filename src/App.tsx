@@ -9,6 +9,7 @@ import { RootNavigator } from './navigation/RootNavigator';
 import { consumeInitialNotification, subscribeToForegroundNotifications } from './services/notificationEvents';
 import { ensureChannel } from './services/notificationService';
 import { resyncAllNotifications } from './services/reminderSync';
+import { subscribeToSharedContent } from './services/shareIntake';
 import { getSettings } from './services/settingsService';
 import { ThemeProvider, useAppTheme } from './theme';
 import { describeError, logError } from './utils/errors';
@@ -68,8 +69,13 @@ export default function App() {
     start();
     // A notification tap that launched the app from a killed state.
     consumeInitialNotification();
-    const unsubscribe = subscribeToForegroundNotifications();
-    return unsubscribe;
+    const unsubscribeNotifications = subscribeToForegroundNotifications();
+    // Text/links shared from other apps (Instagram, YouTube...) open a pre-filled Add form.
+    const unsubscribeShares = subscribeToSharedContent();
+    return () => {
+      unsubscribeNotifications();
+      unsubscribeShares();
+    };
   }, [start]);
 
   return (

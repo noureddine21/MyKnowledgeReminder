@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">My Knowledge Reminder</string>
+    <string name="share_label">Add to My Knowledge Reminder</string>
 </resources>

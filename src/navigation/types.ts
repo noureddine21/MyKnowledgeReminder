@@ -1,11 +1,13 @@
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type { CompositeScreenProps, NavigatorScreenParams } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { SharedDraft } from '../services/shareIntake';
 
 export type TabParamList = {
   Home: undefined;
   Library: { categoryId?: number } | undefined;
-  AddInformation: undefined;
+  /** `shared` pre-fills the form (Share from another app); `shareId` makes each share unique. */
+  AddInformation: { shared?: SharedDraft; shareId?: number } | undefined;
   ReviewToday: undefined;
   Settings: undefined;
 };
