@@ -11,7 +11,7 @@ import type {
 import { toTimeString } from '../utils/date';
 import { NotFoundError } from '../utils/errors';
 import { assertValidInformation } from '../utils/validation';
-import { cancelNotification, notificationIdFor } from './notificationService';
+import { cancelNotification, notificationIdFor, snoozeNotificationIdFor } from './notificationService';
 import { syncItemNotification } from './reminderSync';
 import { getNextReminderAt, initialSpacedSchedule } from './reviewSchedule';
 
@@ -115,12 +115,13 @@ export async function saveInformation(
     return itemId;
   });
 
-  const warning = await syncItemNotification(id, now);
+  const warning = await syncItemNotification(id, now, { clearSnooze: true });
   return { id, warning };
 }
 
 export async function deleteInformation(id: number): Promise<void> {
   await cancelNotification(notificationIdFor(id));
+  await cancelNotification(snoozeNotificationIdFor(id));
   const repos = await getRepositories();
   await repos.information.delete(id);
 }

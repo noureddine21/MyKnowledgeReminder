@@ -152,6 +152,20 @@ Manual checks on a device:
    Without these properties the release build is signed with the debug key (fine for sideloading tests only).
    Bump `versionCode` / `versionName` in `android/app/build.gradle` for every release.
 
+## Notifications
+
+Each reminder notification:
+
+- shows the category (colour + name) and, when expanded, the beginning of the saved content and its source;
+- has quick actions that work **without opening the app** (also when the app is killed):
+  - **✓ Reviewed**: records the review in SQLite and moves the reminder to its next step;
+  - **Snooze 10 min / Snooze 1 h**: shows the same reminder again later, without changing the schedule
+    (separate one-off notification `snooze-<id>`, cleared when the item is reviewed, rescheduled, edited or deleted);
+- is grouped with other reminders; tapping it opens the item's Details screen.
+
+If an action fails (e.g. the item was deleted), a notification asks to open the app instead of failing silently.
+Screens that are open refresh automatically after an action.
+
 ## Android notification notes (no exact-delivery promise)
 
 - Android 13+: the app asks for notification permission when you first save a reminder.

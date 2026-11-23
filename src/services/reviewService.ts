@@ -140,7 +140,7 @@ export async function markReviewed(informationId: number, now: number = Date.now
     }
   });
 
-  const warning = await syncItemNotification(informationId, now);
+  const warning = await syncItemNotification(informationId, now, { clearSnooze: true });
   return { completed, nextAt, warning };
 }
 
@@ -186,7 +186,7 @@ export async function rescheduleReview(
     await tx.reviewHistory.add(informationId, 'rescheduled', now);
   });
 
-  return syncItemNotification(informationId, now);
+  return syncItemNotification(informationId, now, { clearSnooze: true });
 }
 
 /** Activates or deactivates the reminder of an item. */

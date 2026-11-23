@@ -76,3 +76,6 @@ export const MAX_TITLE_LENGTH = 150;
 export const MAX_CONTENT_LENGTH = 20000;
 export const MAX_SOURCE_LENGTH = 300;
 export const MAX_CATEGORY_NAME_LENGTH = 40;
+
+/** DeviceEventEmitter event fired when data changed outside a screen (e.g. a notification action). */
+export const DATA_CHANGED_EVENT = 'mkr:data-changed';

@@ -1,5 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
+import { DeviceEventEmitter } from 'react-native';
+import { DATA_CHANGED_EVENT } from '../constants';
 import { describeError, logError } from '../utils/errors';
 
 export interface FocusData<T> {
@@ -11,7 +13,8 @@ export interface FocusData<T> {
 
 /**
  * Loads data every time the screen gains focus (so lists stay fresh after edits
- * in other screens) and whenever `loader` changes (e.g. search/filter changes).
+ * in other screens), whenever `loader` changes (e.g. search/filter changes), and
+ * when a notification action changes data while the screen is visible.
  */
 export function useFocusData<T>(loader: () => Promise<T>, context: string): FocusData<T> {
   const [data, setData] = useState<T | undefined>(undefined);
@@ -43,6 +46,11 @@ export function useFocusData<T>(loader: () => Promise<T>, context: string): Focu
   useFocusEffect(
     useCallback(() => {
       reload();
+      // Refresh while visible when a notification action (reviewed/snooze) changed data.
+      const subscription = DeviceEventEmitter.addListener(DATA_CHANGED_EVENT, () => {
+        reload();
+      });
+      return () => subscription.remove();
     }, [reload]),
   );
 

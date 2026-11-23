@@ -6,11 +6,8 @@ import { getDatabase } from './database/connection';
 import { SettingsProvider, useSettings } from './hooks/useSettings';
 import type { AppSettings } from './models';
 import { RootNavigator } from './navigation/RootNavigator';
-import {
-  consumeInitialNotification,
-  ensureChannel,
-  subscribeToForegroundNotifications,
-} from './services/notificationService';
+import { consumeInitialNotification, subscribeToForegroundNotifications } from './services/notificationEvents';
+import { ensureChannel } from './services/notificationService';
 import { resyncAllNotifications } from './services/reminderSync';
 import { getSettings } from './services/settingsService';
 import { ThemeProvider, useAppTheme } from './theme';
