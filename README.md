@@ -8,6 +8,18 @@ technical notes, French vocabulary, quotes — and get reminded to review it.
   (default 1, 3, 7, 30 days after creation, customizable, optional).
 - Local notifications that open the related item when tapped; restored after app restart and device reboot.
 
+## Features at a glance
+
+| Area | What it does |
+| --- | --- |
+| Knowledge | Save items (Quran, Hadith, tech, French, notes…), categories, search, smart review schedule, custom repeats (every N hours/days/weeks/months) |
+| Review | Review Today, **quiz mode** (recall → reveal → Hard / Good / Easy), practice with random items, **statistics & streaks** |
+| Notifications | Rich reminders with ✓ Reviewed / Snooze actions, **item of the day** (all items or Quran & Hadith) |
+| Day planner | Write today's list (or **dictate it**), organized around work hours, lunch, breaks and **prayer times**; **routines**, **carry-over** of unfinished tasks, evening summary, per-task notifications |
+| Sharing | Share a link/text (Instagram, YouTube…) or a **screenshot** (text read on the device) to create an item |
+| Data | **Backup & restore** to a JSON file (Drive, Downloads…), 100 % offline |
+| Interface | Light/dark, **English / Français / العربية** (RTL), **home-screen widget** "My day" |
+
 ## Tech stack
 
 | Concern | Library | Why |
@@ -229,9 +241,24 @@ receives through React Native's `Linking` API (cold start and while running).
 - Pending reminders are rescheduled after a reboot by the notification library and re-synced from
   SQLite each time the app starts.
 
+## Native module and widget
+
+`android/app/src/main/java/com/myknowledgereminder/`:
+
+- `MkrNativeModule.kt`: file save/open through the system picker (backup), speech recognition, on-device OCR
+  (ML Kit text recognition, Latin scripts), widget snapshot. JS wrapper: `src/native/mkrNative.ts`.
+- `MkrWidgetProvider.kt` + `res/layout/widget_today.xml`: home-screen widget showing the snapshot computed by
+  `src/services/widgetService.ts` (refreshed on plan/reminder changes and at app start).
+
+## Translations
+
+`src/i18n/` — English text is the key; `fr.ts` and `ar.ts` hold the translations. Use `tr('Text {x}', { x })` and
+`trn(one, other, n)`. Arabic switches the layout to right-to-left after an app restart.
+
 ## Known limitations
 
 - Android only (iOS project exists from the template but is not configured or tested).
-- No backup/export yet: uninstalling or clearing app data deletes everything.
+- Screenshot text recognition reads Latin scripts only (not Arabic).
+- The widget shows the last snapshot; it refreshes when the app or a notification action changes data.
 - A daily reminder reviewed earlier the same day still shows its notification at the scheduled time.
 - Changing the smart-schedule intervals affects new items and the *next* steps of existing ones.
