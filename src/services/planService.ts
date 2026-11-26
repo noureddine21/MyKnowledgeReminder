@@ -8,6 +8,7 @@ import type { AppSettings, DayPlan, DayWindow } from '../models';
 import { addDays, applyTimeString } from '../utils/date';
 import { findPrayerCity, prayerBlocks, type PrayerBlock } from './prayerTimes';
 import { mergeRoutines, routinesForDay } from './routineService';
+import { refreshWidget } from './widgetService';
 import { ValidationError, describeError, logError } from '../utils/errors';
 import {
   MAX_TASK_MINUTES,
@@ -118,6 +119,7 @@ export async function syncPlanNotifications(now: number = Date.now()): Promise<s
     const remaining = plan?.tasks.filter(t => !t.isDone).length ?? 0;
     const dayEnd = applyTimeString(now, plan?.window?.dayEnd ?? settings.planDayEnd);
     await scheduleEveningSummary(remaining, dayEnd, now);
+    await refreshWidget(now);
     return null;
   } catch (error) {
     logError('plan:notifications', error);

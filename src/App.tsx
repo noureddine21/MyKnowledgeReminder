@@ -10,6 +10,7 @@ import { consumeInitialNotification, subscribeToForegroundNotifications } from '
 import { ensureChannel } from './services/notificationService';
 import { scheduleDailyItems } from './services/dailyItemService';
 import { applyPlannerSettings } from './services/planService';
+import { refreshWidget } from './services/widgetService';
 import { resyncAllNotifications } from './services/reminderSync';
 import { subscribeToSharedContent } from './services/shareIntake';
 import { getSettings } from './services/settingsService';
@@ -55,6 +56,8 @@ async function runStartupTasks(): Promise<void> {
   } catch (error) {
     logError('startup:daily-item', error);
   }
+  // Home-screen widget (also refreshed by the planner sync below).
+  await refreshWidget();
   try {
     // Morning "plan your day" reminder + today's task notifications.
     await applyPlannerSettings();

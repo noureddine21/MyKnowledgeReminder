@@ -6,7 +6,7 @@ jest.mock('../src/navigation/navigationRef', () => ({ openSharedDraft: jest.fn()
 jest.mock('../src/native/mkrNative', () => ({ recognizeText: jest.fn() }));
 
 const imageUrl = (uri: string) => `myknowledgereminder://share?image=${encodeURIComponent(uri)}`;
-const flush = () => new Promise(resolve => setImmediate(resolve));
+const flush = () => new Promise<void>(resolve => setImmediate(() => resolve()));
 
 describe('shared screenshots (OCR)', () => {
   beforeEach(() => jest.clearAllMocks());

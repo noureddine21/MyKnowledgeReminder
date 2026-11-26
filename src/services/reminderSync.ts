@@ -5,6 +5,7 @@
 import { getRepositories } from '../database/repositories';
 import type { InformationItem } from '../models';
 import { describeError, logError } from '../utils/errors';
+import { refreshWidget } from './widgetService';
 import {
   cancelNotification,
   getScheduledNotificationIds,
@@ -65,6 +66,7 @@ export async function syncItemNotification(
       return null;
     }
     await syncItem(item, now);
+    await refreshWidget(now);
     return null;
   } catch (error) {
     logError('reminderSync:item', error);
