@@ -20,6 +20,7 @@ import { ReminderSettingsScreen } from '../screens/ReminderSettingsScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { StatsScreen } from '../screens/StatsScreen';
 import { useAppTheme } from '../theme';
 import { flushPendingNavigation, navigationRef } from './navigationRef';
 import type { RootStackParamList, TabParamList } from './types';
@@ -104,6 +105,7 @@ export function RootNavigator() {
         <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & restore' }} />
         <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
         <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
+        <Stack.Screen name="Stats" component={StatsScreen} options={{ title: 'Statistics' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

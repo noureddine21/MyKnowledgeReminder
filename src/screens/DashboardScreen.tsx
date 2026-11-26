@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import {
   AppText,
   Button,
@@ -17,16 +17,19 @@ import {
 import { useFocusData } from '../hooks/useFocusData';
 import type { TabScreenProps } from '../navigation/types';
 import { getDashboard } from '../services/reviewService';
-import { useAppTheme } from '../theme';
+import { getStats } from '../services/statsService';
+import { useAppTheme, withAlpha } from '../theme';
 import { formatLongToday, formatRelative } from '../utils/date';
 
 export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
-  const { colors, spacing } = useAppTheme();
+  const { colors, radius, spacing } = useAppTheme();
   const loader = useCallback(async () => {
     const now = Date.now();
     return { now, ...(await getDashboard(now)) };
   }, []);
   const { data, loading, error, reload } = useFocusData(loader, 'dashboard');
+  const statsLoader = useCallback(() => getStats(), []);
+  const { data: stats } = useFocusData(statsLoader, 'dashboard:stats');
 
   if (!data) {
     return (
@@ -41,12 +44,25 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
 
   return (
     <Screen edges={['top']} refreshing={loading} onRefresh={reload}>
-      <AppText variant="caption" tone="muted">
-        {formatLongToday(data.now).toUpperCase()}
-      </AppText>
-      <AppText variant="title" style={{ marginBottom: spacing.lg }}>
-        My Knowledge
-      </AppText>
+      <View style={[styles.row, { marginBottom: spacing.lg }]}>
+        <View style={styles.flex}>
+          <AppText variant="caption" tone="muted">
+            {formatLongToday(data.now).toUpperCase()}
+          </AppText>
+          <AppText variant="title">My Knowledge</AppText>
+        </View>
+        <Pressable
+          onPress={() => navigation.navigate('Stats')}
+          accessibilityRole="button"
+          accessibilityLabel={`Review streak: ${stats?.currentStreak ?? 0} days. Open statistics`}
+          style={[styles.streak, { backgroundColor: withAlpha(colors.warning, 0.15), borderRadius: radius.pill, paddingHorizontal: spacing.md }]}
+        >
+          <AppText variant="bodyStrong">🔥 {stats?.currentStreak ?? 0}</AppText>
+          <View style={{ marginLeft: spacing.xs }}>
+            <Icon name="chart-bar" size={18} color={colors.textSecondary} />
+          </View>
+        </Pressable>
+      </View>
 
       {data.total === 0 ? (
         <Card>
@@ -95,9 +111,9 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
                 </View>
               </View>
               <Button
-                title="Start review"
+                title="Start the quiz"
                 icon="play"
-                onPress={() => navigation.navigate('ReviewToday')}
+                onPress={() => navigation.navigate('Quiz')}
                 style={{ marginTop: spacing.md }}
               />
             </Card>
@@ -174,4 +190,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   dot: { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
+  streak: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
 });

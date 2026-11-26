@@ -22,6 +22,7 @@ export type RootStackParamList = {
   Backup: undefined;
   Routines: undefined;
   Quiz: { practice?: boolean } | undefined;
+  Stats: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<
