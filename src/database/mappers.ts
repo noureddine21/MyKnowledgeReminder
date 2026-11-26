@@ -6,6 +6,7 @@ import type {
   ReminderFrequency,
   ReviewHistoryEntry,
   ReviewStatus,
+  PlanTask,
 } from '../models';
 import type { SqlRow } from './types';
 
@@ -70,5 +71,21 @@ export function mapReviewHistory(row: SqlRow): ReviewHistoryEntry {
     informationId: num(row.information_id),
     reviewedAt: num(row.reviewed_at),
     status: str(row.status) as ReviewStatus,
+  };
+}
+
+export function mapPlanTask(row: SqlRow): PlanTask {
+  return {
+    id: num(row.id),
+    planDate: str(row.plan_date),
+    title: str(row.title),
+    durationMin: num(row.duration_min),
+    fixedStartMin: numOrNull(row.fixed_start_min),
+    important: bool(row.important),
+    position: num(row.position),
+    startAt: numOrNull(row.start_at),
+    endAt: numOrNull(row.end_at),
+    isDone: bool(row.is_done),
+    doneAt: numOrNull(row.done_at),
   };
 }

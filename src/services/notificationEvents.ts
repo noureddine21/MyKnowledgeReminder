@@ -9,7 +9,7 @@ import { DeviceEventEmitter } from 'react-native';
 import notifee, { EventType, type Event } from 'react-native-notify-kit';
 import { DATA_CHANGED_EVENT, NOTIFICATION_CHANNEL_ID } from '../constants';
 import { getRepositories } from '../database/repositories';
-import { openInformationDetails } from '../navigation/navigationRef';
+import { openInformationDetails, openPlan } from '../navigation/navigationRef';
 import { logError } from '../utils/errors';
 import {
   NOTIFICATION_ACTIONS,
@@ -17,11 +17,15 @@ import {
   dismissDisplayedNotification,
   ensureChannel,
   informationIdFromData,
+  isPlanNotification,
+  PLAN_TASK_DONE_ACTION,
+  planTaskIdFromData,
   notificationIdFor,
   snoozeNotificationIdFor,
   snoozeReminderNotification,
 } from './notificationService';
 import { toScheduleTarget } from './reminderSync';
+import { setPlanTaskDone } from './planService';
 import { markReviewed } from './reviewService';
 
 async function dismissAll(informationId: number, shownId: string | undefined): Promise<void> {
@@ -81,8 +85,26 @@ export async function handleNotificationAction(
   }
 }
 
+/** Day planner notifications: tap opens the Plan tab, "Done" checks the task off. */
+async function handlePlanEvent(event: Event): Promise<void> {
+  const data = event.detail.notification?.data;
+  if (event.type === EventType.PRESS) {
+    openPlan();
+    return;
+  }
+  const taskId = planTaskIdFromData(data);
+  if (event.type === EventType.ACTION_PRESS && event.detail.pressAction?.id === PLAN_TASK_DONE_ACTION && taskId) {
+    await setPlanTaskDone(taskId, true);
+    DeviceEventEmitter.emit(DATA_CHANGED_EVENT);
+  }
+}
+
 export async function handleNotificationEvent(event: Event): Promise<void> {
   const notification = event.detail.notification;
+  if (isPlanNotification(notification?.data)) {
+    await handlePlanEvent(event);
+    return;
+  }
   const id = informationIdFromData(notification?.data);
   if (id === null) {
     return;
@@ -118,6 +140,10 @@ export function subscribeToForegroundNotifications(): () => void {
 export async function consumeInitialNotification(): Promise<void> {
   try {
     const initial = await notifee.getInitialNotification();
+    if (isPlanNotification(initial?.notification?.data)) {
+      openPlan();
+      return;
+    }
     // Action buttons never launch the app, so only body taps arrive here.
     const id = informationIdFromData(initial?.notification?.data);
     if (id !== null) {

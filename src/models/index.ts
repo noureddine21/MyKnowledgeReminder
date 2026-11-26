@@ -99,6 +99,43 @@ export interface AppSettings {
   useSmartScheduleByDefault: boolean;
   /** Default time-of-day for new reminders, "HH:mm". */
   defaultReminderTime: string;
+  /** Day planner: daily notification asking to enter today's to-do list. */
+  planMorningReminder: boolean;
+  /** Time of the morning reminder, "HH:mm". */
+  planMorningTime: string;
+  /** Working window used to organize the day, "HH:mm". */
+  planDayStart: string;
+  planDayEnd: string;
+  /** Keep 12:30–13:30 free. */
+  planLunchBreak: boolean;
+  /** Notify when each planned task starts. */
+  planTaskNotifications: boolean;
+}
+
+/** One task of a day plan, as stored. */
+export interface PlanTask {
+  id: number;
+  /** Local date "YYYY-MM-DD". */
+  planDate: string;
+  title: string;
+  durationMin: number;
+  /** Fixed start chosen by the user ("@14:00"), minutes after midnight. */
+  fixedStartMin: number | null;
+  important: boolean;
+  /** Order in the user's list. */
+  position: number;
+  /** Organized time slot; null when it did not fit in the day. */
+  startAt: number | null;
+  endAt: number | null;
+  isDone: boolean;
+  doneAt: number | null;
+}
+
+export interface DayPlan {
+  planDate: string;
+  rawInput: string;
+  tasks: PlanTask[];
+  updatedAt: number;
 }
 
 export type SortOption = 'createdDesc' | 'createdAsc' | 'nextReminder';

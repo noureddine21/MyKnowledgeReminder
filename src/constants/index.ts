@@ -12,6 +12,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reviewIntervals: DEFAULT_REVIEW_INTERVALS,
   useSmartScheduleByDefault: true,
   defaultReminderTime: '09:00',
+  planMorningReminder: true,
+  planMorningTime: '07:00',
+  planDayStart: '08:00',
+  planDayEnd: '22:00',
+  planLunchBreak: true,
+  planTaskNotifications: true,
 };
 
 export interface DefaultCategory {

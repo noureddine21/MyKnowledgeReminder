@@ -108,7 +108,7 @@ export function buildReminderNotification(
 }
 
 /** Creates a trigger notification, preferring an exact alarm and falling back to an inexact one. */
-async function createTrigger(
+export async function createTrigger(
   notification: Notification,
   timestamp: number,
   repeatFrequency: RepeatFrequency | undefined,

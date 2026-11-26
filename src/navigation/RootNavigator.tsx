@@ -13,6 +13,7 @@ import { DashboardScreen } from '../screens/DashboardScreen';
 import { InformationDetailsScreen } from '../screens/InformationDetailsScreen';
 import { AddInformationScreen, EditInformationScreen } from '../screens/InformationFormScreen';
 import { InformationListScreen } from '../screens/InformationListScreen';
+import { PlanScreen } from '../screens/PlanScreen';
 import { ReminderSettingsScreen } from '../screens/ReminderSettingsScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -27,6 +28,7 @@ const TAB_ICONS: Record<keyof TabParamList, [string, string]> = {
   Home: ['view-dashboard', 'view-dashboard-outline'],
   Library: ['bookshelf', 'bookshelf'],
   AddInformation: ['plus-circle', 'plus-circle-outline'],
+  Plan: ['clipboard-text-clock', 'clipboard-text-clock-outline'],
   ReviewToday: ['calendar-check', 'calendar-check-outline'],
   Settings: ['cog', 'cog-outline'],
 };
@@ -53,6 +55,7 @@ function Tabs() {
       <Tab.Screen name="Home" component={DashboardScreen} options={{ headerShown: false, title: 'Home' }} />
       <Tab.Screen name="Library" component={InformationListScreen} options={{ title: 'My Information' }} />
       <Tab.Screen name="AddInformation" component={AddInformationScreen} options={{ title: 'Add', headerTitle: 'Add Information' }} />
+      <Tab.Screen name="Plan" component={PlanScreen} options={{ title: 'Plan', headerTitle: 'My Day' }} />
       <Tab.Screen name="ReviewToday" component={ReviewTodayScreen} options={{ title: 'Review', headerTitle: 'Review Today' }} />
       <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
     </Tab.Navigator>

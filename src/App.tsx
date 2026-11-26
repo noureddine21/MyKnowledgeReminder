@@ -8,6 +8,7 @@ import type { AppSettings } from './models';
 import { RootNavigator } from './navigation/RootNavigator';
 import { consumeInitialNotification, subscribeToForegroundNotifications } from './services/notificationEvents';
 import { ensureChannel } from './services/notificationService';
+import { applyPlannerSettings } from './services/planService';
 import { resyncAllNotifications } from './services/reminderSync';
 import { subscribeToSharedContent } from './services/shareIntake';
 import { getSettings } from './services/settingsService';
@@ -46,6 +47,12 @@ async function runStartupTasks(): Promise<void> {
     await resyncAllNotifications();
   } catch (error) {
     logError('startup:resync', error);
+  }
+  try {
+    // Morning "plan your day" reminder + today's task notifications.
+    await applyPlannerSettings();
+  } catch (error) {
+    logError('startup:planner', error);
   }
 }
 

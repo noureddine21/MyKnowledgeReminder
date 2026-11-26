@@ -4,9 +4,12 @@ import { AppText, Card, Chip, ListRow, Screen, SectionHeader } from '../componen
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
-import type { ThemeMode } from '../models';
+import type { AppSettings, ThemeMode } from '../models';
 import type { TabScreenProps } from '../navigation/types';
+import { applyPlannerSettings } from '../services/planService';
 import { useAppTheme } from '../theme';
+import { applyTimeString, toTimeString } from '../utils/date';
+import { pickTime } from '../utils/pickers';
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
   { value: 'system', label: 'System', icon: 'theme-light-dark' },
@@ -18,7 +21,27 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
   const { colors, spacing } = useAppTheme();
   const { settings, update } = useSettings();
   const handleError = useErrorHandler();
-  const { state } = useNotificationPermission();
+  const { state, ensurePermission } = useNotificationPermission();
+
+  /** Saves a planner setting, then reschedules the planner notifications. */
+  const updatePlanner = async <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
+    try {
+      await update(key, value);
+      if (value === true) {
+        await ensurePermission();
+      }
+      await applyPlannerSettings();
+    } catch (e) {
+      handleError(e, `settings:${String(key)}`);
+    }
+  };
+
+  const editTime = async (key: 'planMorningTime' | 'planDayStart' | 'planDayEnd') => {
+    const picked = await pickTime(applyTimeString(Date.now(), settings[key]));
+    if (picked !== null) {
+      await updatePlanner(key, toTimeString(picked));
+    }
+  };
 
   return (
     <Screen>
@@ -55,6 +78,45 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
           title="Categories"
           subtitle="Create, edit and delete categories"
           onPress={() => navigation.navigate('Categories')}
+        />
+      </Card>
+
+      <SectionHeader title="Day planner" />
+      <Card style={{ paddingVertical: spacing.xs }}>
+        <ListRow
+          icon="weather-sunset-up"
+          title="Morning reminder"
+          subtitle="Asks you to write today's to-do list"
+          switchValue={settings.planMorningReminder}
+          onSwitchChange={value => updatePlanner('planMorningReminder', value)}
+        />
+        <ListRow
+          icon="alarm"
+          title="Reminder time"
+          value={settings.planMorningTime}
+          onPress={() => editTime('planMorningTime')}
+          disabled={!settings.planMorningReminder}
+        />
+        <ListRow
+          icon="clock-start"
+          title="Day starts"
+          value={settings.planDayStart}
+          onPress={() => editTime('planDayStart')}
+        />
+        <ListRow icon="clock-end" title="Day ends" value={settings.planDayEnd} onPress={() => editTime('planDayEnd')} />
+        <ListRow
+          icon="food-fork-drink"
+          title="Keep lunch free"
+          subtitle="12:30–13:30"
+          switchValue={settings.planLunchBreak}
+          onSwitchChange={value => updatePlanner('planLunchBreak', value)}
+        />
+        <ListRow
+          icon="bell-ring-outline"
+          title="Notify at each task"
+          subtitle="A notification when a planned task starts"
+          switchValue={settings.planTaskNotifications}
+          onSwitchChange={value => updatePlanner('planTaskNotifications', value)}
         />
       </Card>
 

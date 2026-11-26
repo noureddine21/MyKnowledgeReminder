@@ -134,8 +134,8 @@ describe('migration 002 (repeat interval)', () => {
       "INSERT INTO reminders (information_id, scheduled_at, frequency, created_at, updated_at) VALUES (1, 5, 'weekly', 1, 1)",
     );
 
-    expect(await runMigrations(db)).toBe(2);
-    expect(await getSchemaVersion(db)).toBe(2);
+    expect(await runMigrations(db)).toBe(3);
+    expect(await getSchemaVersion(db)).toBe(3);
 
     const repos = createRepositories(db);
     expect(await repos.reminders.findByInformationId(1)).toMatchObject({

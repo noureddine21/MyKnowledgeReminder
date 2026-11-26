@@ -33,6 +33,11 @@ export function openSharedDraft(shared: SharedDraft): void {
   );
 }
 
+/** Opens the day planner tab. */
+export function openPlan(): void {
+  navigateWhenReady(() => navigationRef.navigate('Tabs', { screen: 'Plan' }));
+}
+
 export function flushPendingNavigation(): void {
   if (pending && navigationRef.isReady()) {
     const action = pending;

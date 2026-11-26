@@ -2,6 +2,7 @@ import { getDatabase } from '../connection';
 import type { SqlExecutor } from '../types';
 import { CategoryRepository } from './categoryRepository';
 import { InformationRepository } from './informationRepository';
+import { PlanRepository } from './planRepository';
 import { ReminderRepository } from './reminderRepository';
 import { ReviewHistoryRepository } from './reviewHistoryRepository';
 import { SettingsRepository } from './settingsRepository';
@@ -9,6 +10,7 @@ import { SettingsRepository } from './settingsRepository';
 export interface Repositories {
   categories: CategoryRepository;
   information: InformationRepository;
+  plans: PlanRepository;
   reminders: ReminderRepository;
   reviewHistory: ReviewHistoryRepository;
   settings: SettingsRepository;
@@ -18,6 +20,7 @@ export function createRepositories(executor: SqlExecutor): Repositories {
   return {
     categories: new CategoryRepository(executor),
     information: new InformationRepository(executor),
+    plans: new PlanRepository(executor),
     reminders: new ReminderRepository(executor),
     reviewHistory: new ReviewHistoryRepository(executor),
     settings: new SettingsRepository(executor),
@@ -42,6 +45,7 @@ export async function inTransaction<T>(fn: (repos: Repositories) => Promise<T>):
 export {
   CategoryRepository,
   InformationRepository,
+  PlanRepository,
   ReminderRepository,
   ReviewHistoryRepository,
   SettingsRepository,

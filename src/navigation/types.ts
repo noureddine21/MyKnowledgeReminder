@@ -8,6 +8,7 @@ export type TabParamList = {
   Library: { categoryId?: number } | undefined;
   /** `shared` pre-fills the form (Share from another app); `shareId` makes each share unique. */
   AddInformation: { shared?: SharedDraft; shareId?: number } | undefined;
+  Plan: undefined;
   ReviewToday: undefined;
   Settings: undefined;
 };

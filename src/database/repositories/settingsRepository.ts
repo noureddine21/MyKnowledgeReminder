@@ -29,6 +29,16 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   if (raw.defaultReminderTime && /^\d{2}:\d{2}$/.test(raw.defaultReminderTime)) {
     settings.defaultReminderTime = raw.defaultReminderTime;
   }
+  for (const key of ['planMorningTime', 'planDayStart', 'planDayEnd'] as const) {
+    if (raw[key] && /^\d{2}:\d{2}$/.test(raw[key])) {
+      settings[key] = raw[key];
+    }
+  }
+  for (const key of ['planMorningReminder', 'planLunchBreak', 'planTaskNotifications'] as const) {
+    if (raw[key] !== undefined) {
+      settings[key] = raw[key] === 'true';
+    }
+  }
   return settings;
 }
 
