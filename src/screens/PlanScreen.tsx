@@ -15,8 +15,8 @@ import {
 import { useFocusData } from '../hooks/useFocusData';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
-import type { DayPlan, DayWindow, PlanTask } from '../models';
-import { formatDuration, lunchWindow, workWindow, LUNCH_END, LUNCH_START } from '../services/dayPlanner';
+import type { AppSettings, DayPlan, DayWindow, PlanTask } from '../models';
+import { formatDuration, lunchWindow, workWindow } from '../services/dayPlanner';
 import {
   MAX_PLAN_INPUT_LENGTH,
   getTodayPlan,
@@ -36,7 +36,7 @@ type TimelineItem =
   | { kind: 'task'; task: PlanTask }
   | { kind: 'lunch' | 'work'; start: number; end: number };
 
-function buildTimeline(plan: DayPlan, lunch: boolean, now: number): TimelineItem[] {
+function buildTimeline(plan: DayPlan, settings: AppSettings, now: number): TimelineItem[] {
   const items: TimelineItem[] = plan.tasks
     .filter(t => t.startAt !== null)
     .map(task => ({ kind: 'task' as const, task }));
@@ -47,8 +47,10 @@ function buildTimeline(plan: DayPlan, lunch: boolean, now: number): TimelineItem
   if (work) {
     items.push({ kind: 'work', ...work });
   }
-  if (lunch) {
-    const lunchSlot = lunchWindow(now);
+  const lunchSlot = settings.planLunchBreak
+    ? lunchWindow(now, { start: settings.planLunchStart, end: settings.planLunchEnd })
+    : null;
+  if (lunchSlot) {
     // During work hours, lunch is part of the work block.
     if (!work || lunchSlot.end <= work.start || lunchSlot.start >= work.end) {
       items.push({ kind: 'lunch', ...lunchSlot });
@@ -82,7 +84,7 @@ function TimeButton({ value, onChange, label }: { value: string; onChange: (v: s
   );
 }
 
-/** "Are you working today?" + work hours + day window, for today only. */
+/** Today's work hours and day window, to change them for today only (exceptions). */
 function DayWindowEditor({
   value,
   onChange,
@@ -98,7 +100,7 @@ function DayWindowEditor({
   return (
     <Card style={{ marginBottom: spacing.lg }}>
       <AppText variant="bodyStrong" style={{ marginBottom: spacing.sm }}>
-        Are you working today?
+        Working today?
       </AppText>
       <View style={styles.chips}>
         <Chip
@@ -168,9 +170,46 @@ function SyntaxHelp() {
   );
 }
 
+function describeWindow(window: DayWindow, settings: AppSettings): string[] {
+  const work = window.workStart ? `Work ${window.workStart}–${window.workEnd}` : 'Day off';
+  const extras = [`Day ${window.dayStart}–${window.dayEnd}`];
+  if (settings.planLunchBreak) {
+    extras.push(`lunch ${settings.planLunchStart}–${settings.planLunchEnd}`);
+  }
+  if (settings.planBreakMinutes > 0) {
+    extras.push(`${settings.planBreakMinutes} min break every ${formatDuration(settings.planBreakAfterMinutes)}`);
+  }
+  return [work, extras.join(' · ')];
+}
+
+/** One-line summary of how today is organized (from Settings), with "Change for today". */
+function TodaySummary({ window, onChange }: { window: DayWindow; onChange: () => void }) {
+  const { colors, spacing } = useAppTheme();
+  const { settings } = useSettings();
+  const [title, details] = describeWindow(window, settings);
+  return (
+    <Card style={{ marginBottom: spacing.lg }}>
+      <View style={styles.taskRow}>
+        <Icon name={window.workStart ? 'briefcase-outline' : 'beach'} size={20} color={colors.primary} />
+        <View style={[styles.flex, { marginLeft: spacing.sm }]}>
+          <AppText variant="bodyStrong">{title}</AppText>
+          <AppText variant="caption" tone="secondary">
+            {details}
+          </AppText>
+        </View>
+        <Pressable onPress={onChange} hitSlop={8} accessibilityRole="button">
+          <AppText variant="small" color={colors.primary}>
+            Change for today
+          </AppText>
+        </Pressable>
+      </View>
+    </Card>
+  );
+}
+
 export function PlanScreen() {
   const { colors, radius, spacing } = useAppTheme();
-  const { settings, update } = useSettings();
+  const { settings } = useSettings();
   const { ensurePermission } = useNotificationPermission();
 
   const loader = useCallback(() => getTodayPlan(), []);
@@ -180,7 +219,8 @@ export function PlanScreen() {
   const [input, setInput] = useState('');
   const [inputError, setInputError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
-  const [dayWindow, setDayWindow] = useState<DayWindow>(() => proposedWindow(settings, Date.now()));
+  /** Set when the user changed today's hours (exception); otherwise the settings apply. */
+  const [customWindow, setCustomWindow] = useState<DayWindow | null>(null);
   const [windowErrors, setWindowErrors] = useState<Record<string, string>>({});
 
   const run = async (action: () => Promise<{ warning: string | null }>) => {
@@ -230,22 +270,27 @@ export function PlanScreen() {
 
   const now = Date.now();
   const showEditor = editing || !plan;
+  const dayWindow = customWindow ?? proposedWindow(settings, now);
 
   if (showEditor) {
     return (
       <Screen keyboard>
         <AppText variant="h2">{formatLongToday(now)}</AppText>
         <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>
-          Tell me how your day looks, then write what you have to do. The app organizes it for you.
+          Write what you have to do today. The app organizes it around your work, lunch and breaks.
         </AppText>
-        <DayWindowEditor
-          value={dayWindow}
-          onChange={value => {
-            setDayWindow(value);
-            setWindowErrors({});
-          }}
-          errors={windowErrors}
-        />
+        {customWindow ? (
+          <DayWindowEditor
+            value={customWindow}
+            onChange={value => {
+              setCustomWindow(value);
+              setWindowErrors({});
+            }}
+            errors={windowErrors}
+          />
+        ) : (
+          <TodaySummary window={dayWindow} onChange={() => setCustomWindow(dayWindow)} />
+        )}
         <SyntaxHelp />
         <TextField
           label="Today's to-do list"
@@ -264,17 +309,7 @@ export function PlanScreen() {
           title={plan ? 'Re-organize my day' : 'Organize my day'}
           icon="clipboard-text-clock-outline"
           loading={busy}
-          onPress={() =>
-            run(async () => {
-              const result = await organizeToday(input, Date.now(), dayWindow);
-              if (dayWindow.workStart && dayWindow.workEnd) {
-                // Proposed again on the next work day.
-                await update('planWorkStart', dayWindow.workStart);
-                await update('planWorkEnd', dayWindow.workEnd);
-              }
-              return result;
-            })
-          }
+          onPress={() => run(() => organizeToday(input, Date.now(), dayWindow))}
         />
         {plan ? (
           <Button
@@ -285,14 +320,13 @@ export function PlanScreen() {
           />
         ) : null}
         <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>
-          {settings.planLunchBreak ? `Lunch ${LUNCH_START}–${LUNCH_END} kept free · ` : ''}5 min between tasks,
-          15 min break after 2 h. Defaults are in Settings → Day planner.
+          Your work days and hours, lunch and breaks are set once in Settings → Day planner.
         </AppText>
       </Screen>
     );
   }
 
-  const timeline = buildTimeline(plan, settings.planLunchBreak, now);
+  const timeline = buildTimeline(plan, settings, now);
   const unscheduled = plan.tasks.filter(t => t.startAt === null && !t.isDone);
   const doneCount = plan.tasks.filter(t => t.isDone).length;
   const lastEnd = Math.max(0, ...plan.tasks.map(t => t.endAt ?? 0));
@@ -321,7 +355,15 @@ export function PlanScreen() {
           compact
           onPress={() => {
             setInput(plan.rawInput);
-            setDayWindow(plan.window ?? proposedWindow(settings, Date.now()));
+            const proposed = proposedWindow(settings, Date.now());
+            const saved = plan.window;
+            const differs =
+              saved !== null &&
+              (saved.dayStart !== proposed.dayStart ||
+                saved.dayEnd !== proposed.dayEnd ||
+                saved.workStart !== proposed.workStart ||
+                saved.workEnd !== proposed.workEnd);
+            setCustomWindow(differs ? saved : null);
             setWindowErrors({});
             setEditing(true);
           }}

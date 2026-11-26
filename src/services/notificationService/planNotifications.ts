@@ -55,7 +55,7 @@ export async function scheduleMorningPlanReminder(
     {
       id: MORNING_PLAN_NOTIFICATION_ID,
       title: 'Plan your day ☀️',
-      body: 'Are you working today? Set your hours, write your to-do list and get your day organized.',
+      body: "Write today's to-do list: the app organizes it around your work and breaks.",
       data: { screen: 'plan' },
       android: {
         channelId: NOTIFICATION_CHANNEL_ID,

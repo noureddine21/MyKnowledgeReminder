@@ -25,9 +25,17 @@ export async function updateSetting<K extends keyof AppSettings>(
     'planDayEnd',
     'planWorkStart',
     'planWorkEnd',
+    'planLunchStart',
+    'planLunchEnd',
   ];
   if (timeKeys.includes(key) && !/^\d{2}:\d{2}$/.test(String(value))) {
     throw new ValidationError({ [key]: 'Invalid time.' });
+  }
+  if (
+    key === 'planWorkDays' &&
+    !(Array.isArray(value) && (value as number[]).every(d => Number.isInteger(d) && d >= 0 && d <= 6))
+  ) {
+    throw new ValidationError({ planWorkDays: 'Invalid work days.' });
   }
   const repos = await getRepositories();
   await repos.settings.set(key, value);

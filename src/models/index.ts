@@ -110,9 +110,16 @@ export interface AppSettings {
   planLunchBreak: boolean;
   /** Notify when each planned task starts. */
   planTaskNotifications: boolean;
-  /** Last work hours used ("HH:mm"), proposed when planning a work day. */
+  /** Work schedule: days of the week (0 = Sunday … 6 = Saturday) and hours ("HH:mm"). */
+  planWorkDays: number[];
   planWorkStart: string;
   planWorkEnd: string;
+  /** Lunch break kept free when `planLunchBreak` is on ("HH:mm"). */
+  planLunchStart: string;
+  planLunchEnd: string;
+  /** Short break of `planBreakMinutes` after `planBreakAfterMinutes` of continuous tasks (0 = no break). */
+  planBreakMinutes: number;
+  planBreakAfterMinutes: number;
 }
 
 /** Time window of a planned day ("HH:mm"); work hours are null on a day off. */

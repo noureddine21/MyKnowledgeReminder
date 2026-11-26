@@ -24,7 +24,13 @@ const time = (ts: number | null) => (ts === null ? null : new Date(ts).toTimeStr
 const mockedNotifee = notifee as jest.Mocked<typeof notifee>;
 
 const DAY_OFF = { dayStart: '08:00', dayEnd: '22:00', workStart: null, workEnd: null };
-const OPTIONS = { day: at(7), now: at(7), dayStart: '08:00', dayEnd: '22:00', lunchBreak: true };
+const OPTIONS = {
+  day: at(7),
+  now: at(7),
+  dayStart: '08:00',
+  dayEnd: '22:00',
+  lunch: { start: '12:30', end: '13:30' },
+};
 
 describe('day planner: reading the list', () => {
   it('reads durations, fixed times and importance', () => {
@@ -167,7 +173,7 @@ describe('day planner: work day and day window', () => {
     ]);
   });
 
-  it('proposes work hours on weekdays and a day off on weekends', () => {
+  it('uses the work schedule from the settings (work days + hours)', () => {
     const settings = {
       ...require('../src/constants').DEFAULT_SETTINGS,
       planWorkStart: '10:00',
@@ -175,6 +181,25 @@ describe('day planner: work day and day window', () => {
     };
     expect(proposedWindow(settings, at(9, 0, 26))).toMatchObject({ workStart: '10:00', workEnd: '18:00' }); // Thursday
     expect(proposedWindow(settings, at(9, 0, 28))).toMatchObject({ workStart: null, workEnd: null }); // Saturday
+    // Works on Saturdays, not on Thursdays.
+    const custom = { ...settings, planWorkDays: [1, 2, 3, 6] };
+    expect(proposedWindow(custom, at(9, 0, 26)).workStart).toBeNull();
+    expect(proposedWindow(custom, at(9, 0, 28)).workStart).toBe('10:00');
+  });
+
+  it('applies the configured breaks and lunch hours', () => {
+    const tasks = parseTaskList('A 1h\nB 1h\nC 30m');
+    const noBreak = organizeDay(tasks, { ...OPTIONS, now: at(8), breakMinutes: 0, lunch: null });
+    expect(noBreak.map(t => time(t.startAt))).toEqual(['08:00', '09:05', '10:10']);
+    const hourly = organizeDay(tasks, { ...OPTIONS, now: at(8), breakMinutes: 30, breakAfterMinutes: 60 });
+    expect(hourly.map(t => time(t.startAt))).toEqual(['08:00', '09:30', '11:00']);
+    const lateLunch = organizeDay(parseTaskList('A 3h\nB 1h'), {
+      ...OPTIONS,
+      now: at(10),
+      breakMinutes: 0,
+      lunch: { start: '13:00', end: '14:00' },
+    });
+    expect(lateLunch.map(t => time(t.startAt))).toEqual(['10:00', '14:00']);
   });
 
   it('validates the window', () => {
@@ -195,19 +220,26 @@ describe('day planner: saving the day window', () => {
 
   afterEach(() => db.close());
 
-  it('stores the window, remembers work hours, and keeps them when re-planning', async () => {
+  it('stores the window of the day and keeps it when re-planning', async () => {
     const window = { dayStart: '07:00', dayEnd: '23:00', workStart: '08:30', workEnd: '16:30' };
     // 2 h does not fit before work (07:00 -> 09:00 overlaps 08:30) -> after work.
     const { plan } = await organizeToday('Gym 2h', at(7), window);
     expect(plan.window).toEqual(window);
     expect(time(plan.tasks[0].startAt)).toBe('16:30');
 
-    const settings = await createRepositories(db).settings.getAll();
-    expect([settings.planWorkStart, settings.planWorkEnd]).toEqual(['08:30', '16:30']);
 
     const { plan: replanned } = await replanRemaining(at(7, 30));
     expect(replanned.window).toEqual(window);
     expect(time(replanned.tasks[0].startAt)).toBe('16:30');
+  });
+
+  it('uses the settings work schedule when no exception is given', async () => {
+    const repos = createRepositories(db);
+    await repos.settings.set('planWorkStart', '08:00');
+    await repos.settings.set('planWorkEnd', '16:00');
+    const { plan } = await organizeToday('Gym 1h', at(7, 0, 26)); // Thursday = work day
+    expect(plan.window).toMatchObject({ workStart: '08:00', workEnd: '16:00' });
+    expect(time(plan.tasks[0].startAt)).toBe('16:00');
   });
 
   it('rejects an invalid window', async () => {

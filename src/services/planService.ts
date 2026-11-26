@@ -32,15 +32,14 @@ export async function getTodayPlan(now: number = Date.now()): Promise<DayPlan | 
   return repos.plans.findByDate(dateKey(now));
 }
 
-/** True from Monday to Friday. */
-export function isWeekday(ts: number): boolean {
-  const day = new Date(ts).getDay();
-  return day >= 1 && day <= 5;
+/** True when `ts` falls on one of the user's work days. */
+export function isWorkDay(settings: AppSettings, ts: number): boolean {
+  return settings.planWorkDays.includes(new Date(ts).getDay());
 }
 
-/** Window proposed when planning: settings day hours; work hours on weekdays, day off on weekends. */
+/** Today's window from the settings: day hours, plus work hours on work days. */
 export function proposedWindow(settings: AppSettings, now: number): DayWindow {
-  const working = isWeekday(now);
+  const working = isWorkDay(settings, now);
   return {
     dayStart: settings.planDayStart,
     dayEnd: settings.planDayEnd,
@@ -77,7 +76,9 @@ function dayOptions(window: DayWindow, settings: AppSettings, now: number) {
     now,
     dayStart: window.dayStart,
     dayEnd: window.dayEnd,
-    lunchBreak: settings.planLunchBreak,
+    lunch: settings.planLunchBreak ? { start: settings.planLunchStart, end: settings.planLunchEnd } : null,
+    breakMinutes: settings.planBreakMinutes,
+    breakAfterMinutes: settings.planBreakAfterMinutes,
     work: window.workStart && window.workEnd ? { start: window.workStart, end: window.workEnd } : null,
   };
 }
@@ -143,11 +144,6 @@ export async function organizeToday(
 
   await inTransaction(async tx => {
     await tx.plans.replace(key, input, organized, now, dayWindow);
-    if (dayWindow.workStart && dayWindow.workEnd) {
-      // Remember the work hours for the next work day.
-      await tx.settings.set('planWorkStart', dayWindow.workStart);
-      await tx.settings.set('planWorkEnd', dayWindow.workEnd);
-    }
     await tx.plans.deleteBefore(dateKey(addDays(now, -KEEP_DAYS)));
   });
 

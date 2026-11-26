@@ -44,7 +44,11 @@ export interface DayOptions {
   now: number;
   dayStart: string;
   dayEnd: string;
-  lunchBreak: boolean;
+  /** Lunch kept free ("HH:mm"), or null. */
+  lunch?: { start: string; end: string } | null;
+  /** Break length after `breakAfterMinutes` of continuous tasks (defaults 15 / 120; 0 = none). */
+  breakMinutes?: number;
+  breakAfterMinutes?: number;
   /** Work hours ("HH:mm") on a work day: tasks are planned around them. */
   work?: { start: string; end: string } | null;
 }
@@ -150,8 +154,13 @@ function ceilTo5Minutes(ts: number): number {
   return Math.ceil(ts / step) * step;
 }
 
-export function lunchWindow(day: number): { start: number; end: number } {
-  return { start: atTime(day, LUNCH_START), end: atTime(day, LUNCH_END) };
+export function lunchWindow(
+  day: number,
+  lunch: { start: string; end: string } = { start: LUNCH_START, end: LUNCH_END },
+): { start: number; end: number } | null {
+  const start = atTime(day, lunch.start);
+  const end = atTime(day, lunch.end);
+  return end > start ? { start, end } : null;
 }
 
 /** Builds the timetable. Tasks keep their fields; unscheduled ones have startAt = null. */
@@ -166,9 +175,12 @@ export function organizeDay(tasks: ParsedTask[], options: DayOptions): Organized
   const result: OrganizedTask[] = [];
   const blocked: { start: number; end: number; isBreak: boolean }[] = [];
 
-  if (options.lunchBreak) {
-    blocked.push({ ...lunchWindow(options.day), isBreak: true });
+  const lunch = options.lunch ? lunchWindow(options.day, options.lunch) : null;
+  if (lunch) {
+    blocked.push({ ...lunch, isBreak: true });
   }
+  const breakMinutes = options.breakMinutes ?? BREAK_MINUTES;
+  const breakAfter = options.breakAfterMinutes ?? BREAK_AFTER_MINUTES;
   const work = workWindow(options.day, options.work);
   if (work) {
     blocked.push({ ...work, isBreak: true });
@@ -211,8 +223,8 @@ export function organizeDay(tasks: ParsedTask[], options: DayOptions): Organized
     blocked.push({ start, end, isBreak: false });
 
     streak = crossedBreak || start > cursor ? task.durationMin : streak + task.durationMin;
-    if (streak >= BREAK_AFTER_MINUTES) {
-      cursor = end + BREAK_MINUTES * MINUTE;
+    if (breakMinutes > 0 && streak >= breakAfter) {
+      cursor = end + Math.max(breakMinutes, GAP_MINUTES) * MINUTE;
       streak = 0;
     } else {
       cursor = end + GAP_MINUTES * MINUTE;

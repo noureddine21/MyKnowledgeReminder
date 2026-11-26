@@ -7,9 +7,22 @@ import { useSettings } from '../hooks/useSettings';
 import type { AppSettings, ThemeMode } from '../models';
 import type { TabScreenProps } from '../navigation/types';
 import { applyPlannerSettings } from '../services/planService';
+import { PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS } from '../constants';
+import { formatDuration } from '../services/dayPlanner';
 import { useAppTheme } from '../theme';
 import { applyTimeString, toTimeString } from '../utils/date';
 import { pickTime } from '../utils/pickers';
+
+/** Monday first; values are JS weekdays (0 = Sunday). */
+const WEEK_DAYS: { value: number; label: string }[] = [
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+  { value: 0, label: 'Sun' },
+];
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
   { value: 'system', label: 'System', icon: 'theme-light-dark' },
@@ -36,7 +49,9 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
     }
   };
 
-  const editTime = async (key: 'planMorningTime' | 'planDayStart' | 'planDayEnd') => {
+  const editTime = async (
+    key: 'planMorningTime' | 'planDayStart' | 'planDayEnd' | 'planWorkStart' | 'planWorkEnd' | 'planLunchStart' | 'planLunchEnd',
+  ) => {
     const picked = await pickTime(applyTimeString(Date.now(), settings[key]));
     if (picked !== null) {
       await updatePlanner(key, toTimeString(picked));
@@ -107,9 +122,23 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
         <ListRow
           icon="food-fork-drink"
           title="Keep lunch free"
-          subtitle="12:30–13:30"
+          subtitle={`${settings.planLunchStart}–${settings.planLunchEnd}`}
           switchValue={settings.planLunchBreak}
           onSwitchChange={value => updatePlanner('planLunchBreak', value)}
+        />
+        <ListRow
+          icon="clock-outline"
+          title="Lunch starts"
+          value={settings.planLunchStart}
+          onPress={() => editTime('planLunchStart')}
+          disabled={!settings.planLunchBreak}
+        />
+        <ListRow
+          icon="clock-outline"
+          title="Lunch ends"
+          value={settings.planLunchEnd}
+          onPress={() => editTime('planLunchEnd')}
+          disabled={!settings.planLunchBreak}
         />
         <ListRow
           icon="bell-ring-outline"
@@ -118,6 +147,68 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
           switchValue={settings.planTaskNotifications}
           onSwitchChange={value => updatePlanner('planTaskNotifications', value)}
         />
+      </Card>
+
+      <SectionHeader title="Work schedule" />
+      <Card>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
+          Work days — the planner never puts tasks during your work hours
+        </AppText>
+        <View style={styles.wrap}>
+          {WEEK_DAYS.map(day => {
+            const selected = settings.planWorkDays.includes(day.value);
+            return (
+              <Chip
+                key={day.value}
+                label={day.label}
+                selected={selected}
+                onPress={() =>
+                  updatePlanner(
+                    'planWorkDays',
+                    selected
+                      ? settings.planWorkDays.filter(d => d !== day.value)
+                      : [...settings.planWorkDays, day.value].sort(),
+                  )
+                }
+              />
+            );
+          })}
+        </View>
+        <ListRow icon="briefcase-outline" title="Work starts" value={settings.planWorkStart} onPress={() => editTime('planWorkStart')} />
+        <ListRow icon="briefcase-check-outline" title="Work ends" value={settings.planWorkEnd} onPress={() => editTime('planWorkEnd')} />
+      </Card>
+
+      <SectionHeader title="Breaks" />
+      <Card>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
+          Break length
+        </AppText>
+        <View style={styles.wrap}>
+          {PLAN_BREAK_MINUTES_OPTIONS.map(minutes => (
+            <Chip
+              key={minutes}
+              label={minutes === 0 ? 'No break' : `${minutes} min`}
+              selected={settings.planBreakMinutes === minutes}
+              onPress={() => updatePlanner('planBreakMinutes', minutes)}
+            />
+          ))}
+        </View>
+        <AppText variant="caption" tone="secondary" style={{ marginVertical: spacing.sm }}>
+          After every
+        </AppText>
+        <View style={styles.wrap}>
+          {PLAN_BREAK_AFTER_OPTIONS.map(minutes => (
+            <Chip
+              key={minutes}
+              label={formatDuration(minutes)}
+              selected={settings.planBreakAfterMinutes === minutes}
+              onPress={() => updatePlanner('planBreakAfterMinutes', minutes)}
+            />
+          ))}
+        </View>
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
+          Tasks are also separated by 5 minutes.
+        </AppText>
       </Card>
 
       <SectionHeader title="About" />

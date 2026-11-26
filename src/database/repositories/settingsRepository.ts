@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS } from '../../constants';
+import { DEFAULT_SETTINGS, PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS } from '../../constants';
 import type { AppSettings, ThemeMode } from '../../models';
 import { withDbError } from '../../utils/errors';
 import { validateReviewIntervals } from '../../utils/validation';
@@ -29,7 +29,15 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   if (raw.defaultReminderTime && /^\d{2}:\d{2}$/.test(raw.defaultReminderTime)) {
     settings.defaultReminderTime = raw.defaultReminderTime;
   }
-  for (const key of ['planMorningTime', 'planDayStart', 'planDayEnd', 'planWorkStart', 'planWorkEnd'] as const) {
+  for (const key of [
+    'planMorningTime',
+    'planDayStart',
+    'planDayEnd',
+    'planWorkStart',
+    'planWorkEnd',
+    'planLunchStart',
+    'planLunchEnd',
+  ] as const) {
     if (raw[key] && /^\d{2}:\d{2}$/.test(raw[key])) {
       settings[key] = raw[key];
     }
@@ -38,6 +46,24 @@ function parseSettings(raw: Record<string, string>): AppSettings {
     if (raw[key] !== undefined) {
       settings[key] = raw[key] === 'true';
     }
+  }
+  if (raw.planWorkDays) {
+    try {
+      const days = JSON.parse(raw.planWorkDays);
+      if (Array.isArray(days) && days.every(d => Number.isInteger(d) && d >= 0 && d <= 6)) {
+        settings.planWorkDays = [...new Set<number>(days)].sort();
+      }
+    } catch {
+      // Corrupted value: keep the default.
+    }
+  }
+  const breakMinutes = Number(raw.planBreakMinutes);
+  if (PLAN_BREAK_MINUTES_OPTIONS.includes(breakMinutes)) {
+    settings.planBreakMinutes = breakMinutes;
+  }
+  const breakAfter = Number(raw.planBreakAfterMinutes);
+  if (PLAN_BREAK_AFTER_OPTIONS.includes(breakAfter)) {
+    settings.planBreakAfterMinutes = breakAfter;
   }
   return settings;
 }

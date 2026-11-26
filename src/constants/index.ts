@@ -18,9 +18,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
   planDayEnd: '22:00',
   planLunchBreak: true,
   planTaskNotifications: true,
+  planWorkDays: [1, 2, 3, 4, 5],
   planWorkStart: '09:00',
   planWorkEnd: '17:00',
+  planLunchStart: '12:30',
+  planLunchEnd: '13:30',
+  planBreakMinutes: 15,
+  planBreakAfterMinutes: 120,
 };
+
+/** Choices offered in Settings → Day planner. */
+export const PLAN_BREAK_MINUTES_OPTIONS = [0, 10, 15, 20, 30];
+export const PLAN_BREAK_AFTER_OPTIONS = [60, 90, 120, 180];
 
 export interface DefaultCategory {
   name: string;
