@@ -88,7 +88,7 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
   const [saving, setSaving] = useState(false);
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>(isEdit ? 'loading' : 'ready');
   const [loadError, setLoadError] = useState('');
-  const [fromShare, setFromShare] = useState(false);
+  const [fromShare, setFromShare] = useState<'text' | 'image' | null>(null);
 
   useEffect(() => {
     if (!shared || shareId === undefined) {
@@ -96,7 +96,7 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
     }
     setForm({ ...emptyForm(settings), title: shared.title, content: shared.content, source: shared.source ?? '' });
     setErrors({});
-    setFromShare(true);
+    setFromShare(shared.origin ?? 'text');
     // Only a new share (new shareId) replaces the form.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shareId]);
@@ -169,7 +169,7 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
       }
       if (!isEdit) {
         setForm(emptyForm(settings));
-        setFromShare(false);
+        setFromShare(null);
       }
       onSaved(result.id, !isEdit);
     } catch (error) {
@@ -202,7 +202,9 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
         >
           <Icon name="share-variant" size={18} color={colors.primary} />
           <AppText variant="small" style={{ marginLeft: spacing.sm, flex: 1 }}>
-            Filled from what you shared. Write the key point to remember in Content, then save.
+            {fromShare === 'image'
+              ? 'Text read from your screenshot — check and correct it, then save. (Arabic text cannot be read automatically: type it if needed.)'
+              : 'Filled from what you shared. Write the key point to remember in Content, then save.'}
           </AppText>
         </View>
       ) : null}

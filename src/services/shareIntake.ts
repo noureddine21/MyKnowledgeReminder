@@ -9,12 +9,15 @@
 import { Linking } from 'react-native';
 import { MAX_CONTENT_LENGTH, MAX_SOURCE_LENGTH, MAX_TITLE_LENGTH } from '../constants';
 import { openSharedDraft } from '../navigation/navigationRef';
+import { recognizeText } from '../native/mkrNative';
 import { logError } from '../utils/errors';
 
 export interface SharedDraft {
   title: string;
   content: string;
   source: string | null;
+  /** 'image' when the text was read from a shared screenshot (OCR). */
+  origin?: 'text' | 'image';
 }
 
 const SHARE_PREFIX = 'myknowledgereminder://share';
@@ -34,6 +37,18 @@ function safeDecode(value: string): string {
 
 /** Reads text/subject from an internal share link; null for any other URL. */
 export function parseShareUrl(url: string | null | undefined): { text: string; subject: string | null } | null {
+  const shared = parseShareParams(url);
+  const text = (shared?.text ?? '').trim();
+  return text ? { text, subject: shared?.subject?.trim() || null } : null;
+}
+
+/** Image (content:// URI) shared from another app, or null. */
+export function parseSharedImage(url: string | null | undefined): string | null {
+  const image = parseShareParams(url)?.image?.trim();
+  return image && image.startsWith('content://') ? image : null;
+}
+
+function parseShareParams(url: string | null | undefined): Record<string, string> | null {
   if (!url || !url.toLowerCase().startsWith(SHARE_PREFIX)) {
     return null;
   }
@@ -45,11 +60,25 @@ export function parseShareUrl(url: string | null | undefined): { text: string; s
       params[safeDecode(key)] = safeDecode(rest.join('='));
     }
   }
-  const text = (params.text ?? '').trim();
-  if (!text) {
-    return null;
+  return params;
+}
+
+/** Draft built from the text read in a screenshot. */
+export function buildDraftFromImageText(text: string): SharedDraft {
+  const cleaned = text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  if (!cleaned) {
+    return { title: 'Screenshot', content: '', source: null, origin: 'image' };
   }
-  return { text, subject: params.subject?.trim() || null };
+  return { ...buildDraftFromShare(cleaned), origin: 'image' };
+}
+
+async function openImageDraft(uri: string): Promise<void> {
+  try {
+    openSharedDraft(buildDraftFromImageText(await recognizeText(uri)));
+  } catch (error) {
+    logError('share:ocr', error);
+    openSharedDraft({ title: 'Screenshot', content: '', source: null, origin: 'image' });
+  }
 }
 
 function hostOf(url: string): string {
@@ -109,6 +138,11 @@ export function buildDraftFromShare(text: string, subject: string | null = null)
 
 /** Opens the Add form with a draft when `url` is a share link. Returns true if handled. */
 export function handleIncomingUrl(url: string | null | undefined): boolean {
+  const image = parseSharedImage(url);
+  if (image) {
+    openImageDraft(image);
+    return true;
+  }
   const shared = parseShareUrl(url);
   if (!shared) {
     return false;
