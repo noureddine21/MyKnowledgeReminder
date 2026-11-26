@@ -125,6 +125,15 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
             <AppText variant="h2">
               {data.items.length} {data.items.length === 1 ? 'item' : 'items'} to review
             </AppText>
+            <Button
+              title="Start the quiz"
+              icon="head-lightbulb-outline"
+              onPress={() => navigation.navigate('Quiz')}
+              style={{ marginTop: spacing.md }}
+            />
+            <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>
+              Try to remember each item before seeing it — the best way to memorize.
+            </AppText>
           </View>
         ) : null
       }
@@ -133,8 +142,8 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
           icon="check-decagram-outline"
           title="All caught up!"
           message="Nothing to review today. Items appear here on their reminder date."
-          actionLabel="Browse my information"
-          onAction={() => navigation.navigate('Library', undefined)}
+          actionLabel="Practice anyway"
+          onAction={() => navigation.navigate('Quiz', { practice: true })}
         />
       }
       renderItem={renderItem}

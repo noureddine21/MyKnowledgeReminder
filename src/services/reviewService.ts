@@ -1,6 +1,6 @@
 import { getRepositories, inTransaction, type CategoryWithCount } from '../database/repositories';
 import type { InformationItem } from '../models';
-import { endOfDay, startOfDay } from '../utils/date';
+import { addDays, applyTimeString, endOfDay, startOfDay, toTimeString } from '../utils/date';
 import { NotFoundError, ValidationError } from '../utils/errors';
 import { syncItemNotification } from './reminderSync';
 import {
@@ -87,7 +87,11 @@ export interface ReviewResult {
 }
 
 /** Records a review and moves the reminder to its next state. */
-export async function markReviewed(informationId: number, now: number = Date.now()): Promise<ReviewResult> {
+export async function markReviewed(
+  informationId: number,
+  now: number = Date.now(),
+  options: { extraSteps?: number } = {},
+): Promise<ReviewResult> {
   const repos = await getRepositories();
   const item = await repos.information.findById(informationId);
   if (!item) {
@@ -121,7 +125,8 @@ export async function markReviewed(informationId: number, now: number = Date.now
       const next = advanceSpacedSchedule(
         reminder.spacedBaseAt ?? item.createdAt,
         settings.reviewIntervals,
-        reminder.spacedStep,
+        // "Easy" in the quiz skips ahead in the smart schedule.
+        reminder.spacedStep + Math.max(0, options.extraSteps ?? 0),
         reminder.scheduledAt,
         now,
       );
@@ -207,4 +212,64 @@ export async function setReminderActive(
   }
   await repos.reminders.setActive(reminder.id, active, now);
   return syncItemNotification(informationId, now);
+}
+
+export type QuizGrade = 'hard' | 'good' | 'easy';
+
+/**
+ * "Hard" in the quiz: the review counts, but the item comes back tomorrow
+ * (same time of day). Repeating reminders keep their series.
+ */
+export async function reviewHard(informationId: number, now: number = Date.now()): Promise<ReviewResult> {
+  const repos = await getRepositories();
+  const item = await repos.information.findById(informationId);
+  if (!item) {
+    throw new NotFoundError('This information');
+  }
+  const settings = await repos.settings.getAll();
+  const reminder = item.reminder;
+  const time = reminder ? toTimeString(reminder.scheduledAt) : settings.defaultReminderTime;
+  const tomorrow = applyTimeString(addDays(now, 1), time);
+  let nextAt: number | null = tomorrow;
+
+  await inTransaction(async tx => {
+    await tx.reviewHistory.add(informationId, 'reviewed', now);
+    if (reminder && isRepeating(reminder.frequency) && reminder.isActive) {
+      await tx.reminders.updateSchedule(
+        reminder.id,
+        { scheduledAt: reminder.scheduledAt, isActive: true, spacedStep: reminder.spacedStep, lastReviewedAt: now },
+        now,
+      );
+      nextAt = getNextReminderAt({ ...reminder, lastReviewedAt: now }, now);
+    } else if (reminder) {
+      await tx.reminders.updateSchedule(
+        reminder.id,
+        { scheduledAt: tomorrow, isActive: true, spacedStep: reminder.spacedStep, lastReviewedAt: now },
+        now,
+      );
+    } else {
+      await tx.reminders.upsert(
+        informationId,
+        { scheduledAt: tomorrow, frequency: 'once', repeatInterval: 1, isActive: true, spacedStep: 0, spacedBaseAt: null },
+        now,
+      );
+    }
+  });
+
+  const warning = await syncItemNotification(informationId, now, { clearSnooze: true });
+  return { completed: false, nextAt, warning };
+}
+
+/** Applies a quiz answer: hard = again tomorrow, good = normal review, easy = skip ahead. */
+export function gradeReview(informationId: number, grade: QuizGrade, now: number = Date.now()): Promise<ReviewResult> {
+  if (grade === 'hard') {
+    return reviewHard(informationId, now);
+  }
+  return markReviewed(informationId, now, { extraSteps: grade === 'easy' ? 1 : 0 });
+}
+
+/** Practice outside the schedule: only recorded in the history (statistics). */
+export async function recordPractice(informationId: number, now: number = Date.now()): Promise<void> {
+  const repos = await getRepositories();
+  await repos.reviewHistory.add(informationId, 'reviewed', now);
 }

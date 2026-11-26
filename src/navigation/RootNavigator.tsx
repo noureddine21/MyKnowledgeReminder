@@ -15,6 +15,7 @@ import { InformationDetailsScreen } from '../screens/InformationDetailsScreen';
 import { AddInformationScreen, EditInformationScreen } from '../screens/InformationFormScreen';
 import { InformationListScreen } from '../screens/InformationListScreen';
 import { PlanScreen } from '../screens/PlanScreen';
+import { QuizScreen } from '../screens/QuizScreen';
 import { ReminderSettingsScreen } from '../screens/ReminderSettingsScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
@@ -102,6 +103,7 @@ export function RootNavigator() {
         <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: 'Reminder Settings' }} />
         <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & restore' }} />
         <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
+        <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
