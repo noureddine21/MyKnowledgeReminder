@@ -11,12 +11,14 @@ import { ensureChannel } from './services/notificationService';
 import { scheduleDailyItems } from './services/dailyItemService';
 import { applyPlannerSettings } from './services/planService';
 import { refreshWidget } from './services/widgetService';
+import { applyLanguage } from './i18n/apply';
 import { resyncAllNotifications } from './services/reminderSync';
 import { subscribeToSharedContent } from './services/shareIntake';
 import { getSettings } from './services/settingsService';
 import { ThemeProvider, useAppTheme } from './theme';
 import { describeError, logError } from './utils/errors';
 
+import { tr } from './i18n';
 type BootState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
@@ -27,7 +29,8 @@ function ThemedApp() {
   return (
     <ThemeProvider mode={settings.themeMode}>
       <StatusBarForTheme />
-      <RootNavigator />
+      {/* Remounted when the language changes so every screen re-renders its texts. */}
+      <RootNavigator key={settings.language} />
     </ThemeProvider>
   );
 }
@@ -74,6 +77,7 @@ export default function App() {
     try {
       await getDatabase();
       const settings = await getSettings();
+      applyLanguage(settings.language);
       setBoot({ status: 'ready', settings });
       runStartupTasks();
     } catch (error) {
@@ -108,10 +112,10 @@ export default function App() {
               <ActivityIndicator size="large" color="#4F46E5" />
             ) : (
               <>
-                <Text style={styles.title}>Could not start</Text>
+                <Text style={styles.title}>{tr('Could not start')}</Text>
                 <Text style={styles.message}>{boot.message}</Text>
                 <Pressable style={styles.button} onPress={start} accessibilityRole="button">
-                  <Text style={styles.buttonText}>Try again</Text>
+                  <Text style={styles.buttonText}>{tr('Try again')}</Text>
                 </Pressable>
               </>
             )}

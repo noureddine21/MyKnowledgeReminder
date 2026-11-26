@@ -93,6 +93,8 @@ export interface ReminderInput {
 
 export interface AppSettings {
   themeMode: ThemeMode;
+  /** Interface language ('system' follows the phone). */
+  language: 'system' | 'en' | 'fr' | 'ar';
   /** Smart review schedule intervals in days after creation, e.g. [1, 3, 7, 30]. */
   reviewIntervals: number[];
   /** Pre-select the smart schedule in the Add form. */

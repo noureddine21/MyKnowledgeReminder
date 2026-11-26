@@ -16,6 +16,7 @@ import { listCategories } from '../services/categoryService';
 import { listInformation } from '../services/informationService';
 import { useAppTheme } from '../theme';
 
+import { tr, trn } from '../i18n';
 const SORT_OPTIONS: { value: SortOption; label: string; icon: string }[] = [
   { value: 'createdDesc', label: 'Newest', icon: 'sort-calendar-descending' },
   { value: 'createdAsc', label: 'Oldest', icon: 'sort-calendar-ascending' },
@@ -77,9 +78,9 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
           <TextInput
             value={search}
             onChangeText={setSearch}
-            placeholder="Search title, content or source"
+            placeholder={tr('Search title, content or source')}
             placeholderTextColor={colors.textMuted}
-            accessibilityLabel="Search information"
+            accessibilityLabel={tr('Search information')}
             returnKeyType="search"
             style={[typography.body, styles.searchInput, { color: colors.text }]}
           />
@@ -88,7 +89,7 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
               onPress={() => setSearch('')}
               hitSlop={10}
               accessibilityRole="button"
-              accessibilityLabel="Clear search"
+              accessibilityLabel={tr('Clear search')}
             >
               <Icon name="close-circle" size={18} color={colors.textMuted} />
             </Pressable>
@@ -102,7 +103,7 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}
         style={styles.noGrow}
       >
-        <Chip label="All" selected={categoryId === null} onPress={() => setCategoryId(null)} />
+        <Chip label={tr('All')} selected={categoryId === null} onPress={() => setCategoryId(null)} />
         {(categories ?? []).map(c => (
           <Chip
             key={c.id}
@@ -145,22 +146,22 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
             <AppText variant="caption" tone="muted" style={{ marginBottom: spacing.sm }}>
-              {data.items.length} {data.items.length === 1 ? 'item' : 'items'}
+              {trn('{n} item', '{n} items', data.items.length)}
             </AppText>
           }
           ListEmptyComponent={
             filtersActive ? (
               <EmptyState
                 icon="file-search-outline"
-                title="No results"
-                message="Try another search term or category."
+                title={tr('No results')}
+                message={tr('Try another search term or category.')}
               />
             ) : (
               <EmptyState
                 icon="bookshelf"
-                title="Nothing saved yet"
-                message="Information you add will appear here."
-                actionLabel="Add information"
+                title={tr('Nothing saved yet')}
+                message={tr('Information you add will appear here.')}
+                actionLabel={tr('Add information')}
                 onAction={() => navigation.navigate('AddInformation')}
               />
             )

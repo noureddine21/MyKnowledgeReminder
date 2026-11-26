@@ -23,15 +23,16 @@ import { getStats } from '../services/statsService';
 import { shadow, useAppTheme, withAlpha } from '../theme';
 import { formatLongToday, formatRelative, formatTime } from '../utils/date';
 
+import { tr, trn } from '../i18n';
 function greeting(now: number): string {
   const hour = new Date(now).getHours();
   if (hour < 12) {
-    return 'Good morning';
+    return tr('Good morning');
   }
   if (hour < 18) {
-    return 'Good afternoon';
+    return tr('Good afternoon');
   }
-  return 'Good evening';
+  return tr('Good evening');
 }
 
 function QuickAction({ icon, label, color, onPress }: { icon: string; label: string; color: string; onPress: () => void }) {
@@ -91,12 +92,12 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
           <AppText variant="caption" tone="muted">
             {formatLongToday(data.now).toUpperCase()}
           </AppText>
-          <AppText variant="title">My Knowledge</AppText>
+          <AppText variant="title">{tr('My Knowledge')}</AppText>
         </View>
         <Pressable
           onPress={() => navigation.navigate('Stats')}
           accessibilityRole="button"
-          accessibilityLabel={`Review streak: ${stats?.currentStreak ?? 0} days. Open statistics`}
+          accessibilityLabel={tr('Review streak: {n} days. Open statistics', { n: stats?.currentStreak ?? 0 })}
           style={[styles.streak, { backgroundColor: withAlpha(colors.warning, 0.15), borderRadius: radius.pill, paddingHorizontal: spacing.md }]}
         >
           <AppText variant="bodyStrong">🔥 {stats?.currentStreak ?? 0}</AppText>
@@ -104,7 +105,7 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
         <Pressable
           onPress={() => navigation.navigate('Settings')}
           accessibilityRole="button"
-          accessibilityLabel="Settings"
+          accessibilityLabel={tr('Settings')}
           hitSlop={8}
           style={[styles.gear, { backgroundColor: colors.surface, marginLeft: spacing.sm }, shadow(dark, 1)]}
         >
@@ -120,14 +121,13 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
         </AppText>
         <AppText variant="h2" color={colors.primaryContrast} style={{ marginTop: spacing.xs }}>
           {data.dueToday.length > 0
-            ? `${data.dueToday.length} ${data.dueToday.length === 1 ? 'item' : 'items'} to review today`
-            : 'You are up to date ✨'}
+            ? trn('{n} item to review today', '{n} items to review today', data.dueToday.length)
+            : tr('You are up to date ✨')}
         </AppText>
         {data.plan ? (
           <>
             <AppText variant="small" color={withAlpha(colors.primaryContrast, 0.85)} style={{ marginTop: spacing.xs }}>
-              {data.plan.tasks.filter(t => t.isDone).length}/{data.plan.tasks.length} tasks done today
-            </AppText>
+              {tr('{done}/{total} tasks done today', { done: data.plan.tasks.filter(t => t.isDone).length, total: data.plan.tasks.length })}</AppText>
             <View style={[styles.heroTrack, { backgroundColor: withAlpha('#FFFFFF', 0.2), marginTop: spacing.sm }]}>
               <View
                 style={[
@@ -140,17 +140,15 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
             </View>
           </>
         ) : (
-          <AppText variant="small" color={withAlpha(colors.primaryContrast, 0.85)} style={{ marginTop: spacing.xs }}>
-            Your day is not planned yet.
-          </AppText>
+          <AppText variant="small" color={withAlpha(colors.primaryContrast, 0.85)} style={{ marginTop: spacing.xs }}>{tr('Your day is not planned yet.')}</AppText>
         )}
       </View>
 
       <View style={[styles.quickRow, { marginVertical: spacing.lg }]}>
-        <QuickAction icon="plus" label="Add" color={colors.primary} onPress={() => navigation.navigate('AddInformation')} />
-        <QuickAction icon="clipboard-text-clock-outline" label="Plan" color={colors.warning} onPress={() => navigation.navigate('Plan')} />
-        <QuickAction icon="head-lightbulb-outline" label="Quiz" color={colors.success} onPress={() => navigation.navigate('Quiz')} />
-        <QuickAction icon="chart-bar" label="Stats" color={colors.danger} onPress={() => navigation.navigate('Stats')} />
+        <QuickAction icon="plus" label={tr('Add')} color={colors.primary} onPress={() => navigation.navigate('AddInformation')} />
+        <QuickAction icon="clipboard-text-clock-outline" label={tr('Plan')} color={colors.warning} onPress={() => navigation.navigate('Plan')} />
+        <QuickAction icon="head-lightbulb-outline" label={tr('Quiz')} color={colors.success} onPress={() => navigation.navigate('Quiz')} />
+        <QuickAction icon="chart-bar" label={tr('Stats')} color={colors.danger} onPress={() => navigation.navigate('Stats')} />
       </View>
 
       {nextTask ? (
@@ -163,7 +161,7 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
             </View>
             <View style={[styles.flex, { marginLeft: spacing.md }]}>
               <AppText variant="caption" tone="muted">
-                {nextTask.startAt! <= data.now ? 'NOW' : 'NEXT TASK'}
+                {nextTask.startAt! <= data.now ? tr('NOW') : tr('NEXT TASK')}
               </AppText>
               <AppText variant="bodyStrong" numberOfLines={1}>
                 {nextTask.important ? '⭐ ' : ''}
@@ -182,9 +180,9 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
         <Card>
           <EmptyState
             icon="lightbulb-on-outline"
-            title="Start building your knowledge"
-            message="Save a Quran verse, a Hadith, a technical note or a French word, and get reminded to review it."
-            actionLabel="Add your first information"
+            title={tr('Start building your knowledge')}
+            message={tr('Save a Quran verse, a Hadith, a technical note or a French word, and get reminded to review it.')}
+            actionLabel={tr('Add your first information')}
             onAction={() => navigation.navigate('AddInformation')}
           />
         </Card>
@@ -192,14 +190,14 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
         <>
           <View style={[styles.row, { gap: spacing.md }]}>
             <StatCard
-              label="Saved"
+              label={tr('Saved')}
               value={data.total}
               icon="bookshelf"
               color={colors.primary}
               onPress={() => navigation.navigate('Library', undefined)}
             />
             <StatCard
-              label="To review"
+              label={tr('To review')}
               value={data.dueToday.length}
               icon="calendar-check"
               color={data.dueToday.length > 0 ? colors.warning : colors.success}
@@ -213,15 +211,12 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
                 <Icon name="brain" size={28} color={colors.primary} />
                 <View style={[styles.flex, { marginLeft: spacing.md }]}>
                   <AppText variant="bodyStrong">
-                    {data.dueToday.length} {data.dueToday.length === 1 ? 'item' : 'items'} to review today
-                  </AppText>
-                  <AppText variant="small" tone="secondary">
-                    A few minutes of review keeps knowledge fresh.
-                  </AppText>
+                    {trn('{n} item to review today', '{n} items to review today', data.dueToday.length)}</AppText>
+                  <AppText variant="small" tone="secondary">{tr('A few minutes of review keeps knowledge fresh.')}</AppText>
                 </View>
               </View>
               <Button
-                title="Start the quiz"
+                title={tr('Start the quiz')}
                 icon="play"
                 onPress={() => navigation.navigate('Quiz')}
                 style={{ marginTop: spacing.md }}
@@ -229,9 +224,9 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
             </Card>
           ) : null}
 
-          <SectionHeader title="Upcoming reminders" />
+          <SectionHeader title={tr('Upcoming reminders')} />
           {data.upcoming.length === 0 ? (
-            <AppText tone="muted">No upcoming reminders.</AppText>
+            <AppText tone="muted">{tr('No upcoming reminders.')}</AppText>
           ) : (
             <Card style={{ paddingVertical: spacing.sm }}>
               {data.upcoming.map(({ item, nextAt }, index) => (
@@ -256,8 +251,8 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
           )}
 
           <SectionHeader
-            title="Recently added"
-            actionLabel="See all"
+            title={tr('Recently added')}
+            actionLabel={tr('See all')}
             onAction={() => navigation.navigate('Library', undefined)}
           />
           {data.recent.map(item => (
@@ -265,8 +260,8 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
           ))}
 
           <SectionHeader
-            title="Categories"
-            actionLabel="Manage"
+            title={tr('Categories')}
+            actionLabel={tr('Manage')}
             onAction={() => navigation.navigate('Categories')}
           />
           <View style={styles.wrap}>

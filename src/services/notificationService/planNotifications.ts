@@ -10,6 +10,7 @@ import { formatTime } from '../../utils/date';
 import { logError } from '../../utils/errors';
 import { cancelNotification, createTrigger, getScheduledNotificationIds } from './scheduler';
 
+import { tr, trn } from '../../i18n';
 export const MORNING_PLAN_NOTIFICATION_ID = 'plan-morning';
 export const PLAN_TASK_DONE_ACTION = 'plan-done';
 export const EVENING_PLAN_NOTIFICATION_ID = 'plan-evening';
@@ -55,8 +56,8 @@ export async function scheduleMorningPlanReminder(
   await createTrigger(
     {
       id: MORNING_PLAN_NOTIFICATION_ID,
-      title: 'Plan your day ☀️',
-      body: "Write today's to-do list: the app organizes it around your work and breaks.",
+      title: tr('Plan your day ☀️'),
+      body: tr("Write today's to-do list: the app organizes it around your work and breaks."),
       data: { screen: 'plan' },
       android: {
         channelId: NOTIFICATION_CHANNEL_ID,
@@ -80,7 +81,7 @@ export async function schedulePlanTaskNotification(task: PlanTask): Promise<void
   await createTrigger(
     {
       id: planTaskNotificationId(task.id),
-      title: `${task.important ? '⭐ ' : ''}Now: ${task.title}`,
+      title: `${task.important ? '⭐ ' : ''}${tr('Now: {title}', { title: task.title })}`,
       body: `${formatTime(task.startAt)} – ${formatTime(task.endAt)} (${minutes} min)`,
       data: { planTaskId: String(task.id) },
       android: {
@@ -90,7 +91,7 @@ export async function schedulePlanTaskNotification(task: PlanTask): Promise<void
         category: AndroidCategory.REMINDER,
         showTimestamp: true,
         pressAction: { id: 'default', launchActivity: 'default' },
-        actions: [{ title: '✓ Done', pressAction: { id: PLAN_TASK_DONE_ACTION } }],
+        actions: [{ title: tr('✓ Done'), pressAction: { id: PLAN_TASK_DONE_ACTION } }],
         autoCancel: true,
       },
     },
@@ -111,8 +112,8 @@ export async function scheduleEveningSummary(remaining: number, at: number, now:
   await createTrigger(
     {
       id: EVENING_PLAN_NOTIFICATION_ID,
-      title: remaining === 1 ? '1 task not done today' : `${remaining} tasks not done today`,
-      body: "No stress: they will be proposed in tomorrow's plan.",
+      title: trn('{n} task not done today', '{n} tasks not done today', remaining),
+      body: tr("No stress: they will be proposed in tomorrow's plan."),
       data: { screen: 'plan' },
       android: {
         channelId: NOTIFICATION_CHANNEL_ID,

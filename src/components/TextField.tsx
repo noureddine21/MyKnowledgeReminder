@@ -3,6 +3,7 @@ import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { useAppTheme } from '../theme';
 import { AppText } from './AppText';
 
+import { tr } from '../i18n';
 interface Props extends TextInputProps {
   label: string;
   error?: string;
@@ -44,7 +45,7 @@ export const TextField = forwardRef<TextInput, Props>(function TextFieldInner(
       />
       {error ? (
         <AppText variant="caption" color={colors.danger} style={{ marginTop: spacing.xs }}>
-          {error}
+          {tr(error)}
         </AppText>
       ) : hint ? (
         <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>

@@ -5,6 +5,7 @@ import { AppText } from './AppText';
 import { Button } from './Button';
 import { Icon } from './Icon';
 
+import { tr } from '../i18n';
 export function LoadingView() {
   const { colors } = useAppTheme();
   return (
@@ -19,13 +20,11 @@ export function ErrorView({ message, onRetry }: { message: string; onRetry?: () 
   return (
     <View style={[styles.center, { padding: spacing.xl }]}>
       <Icon name="alert-circle-outline" size={48} color={colors.danger} />
-      <AppText variant="h3" style={[styles.text, { marginTop: spacing.md }]}>
-        Something went wrong
-      </AppText>
+      <AppText variant="h3" style={[styles.text, { marginTop: spacing.md }]}>{tr('Something went wrong')}</AppText>
       <AppText tone="secondary" style={[styles.text, { marginTop: spacing.xs, marginBottom: spacing.lg }]}>
         {message}
       </AppText>
-      {onRetry ? <Button title="Try again" icon="refresh" onPress={onRetry} /> : null}
+      {onRetry ? <Button title={tr('Try again')} icon="refresh" onPress={onRetry} /> : null}
     </View>
   );
 }

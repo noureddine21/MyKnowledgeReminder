@@ -6,22 +6,23 @@ import { getStats } from '../services/statsService';
 import { useAppTheme, withAlpha } from '../theme';
 import { isSameDay } from '../utils/date';
 
+import { tr, trn } from '../i18n';
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function streakMessage(current: number, reviewedToday: boolean): string {
   if (current === 0) {
-    return 'Review one item today to start a streak.';
+    return tr('Review one item today to start a streak.');
   }
   if (!reviewedToday) {
-    return 'Review today to keep your streak alive!';
+    return tr('Review today to keep your streak alive!');
   }
   if (current >= 30) {
-    return 'Incredible consistency. Keep going!';
+    return tr('Incredible consistency. Keep going!');
   }
   if (current >= 7) {
-    return 'A full week and more — masha Allah!';
+    return tr('A full week and more — masha Allah!');
   }
-  return 'Great, you reviewed today. See you tomorrow!';
+  return tr('Great, you reviewed today. See you tomorrow!');
 }
 
 function Tile({ icon, value, label, color }: { icon: string; value: string; label: string; color: string }) {
@@ -62,14 +63,12 @@ export function StatsScreen() {
           <AppText style={styles.fire}>🔥</AppText>
           <View style={[styles.flex, { marginLeft: spacing.md }]}>
             <AppText variant="title" color={colors.primaryContrast}>
-              {stats.currentStreak} {stats.currentStreak === 1 ? 'day' : 'days'}
+              {trn('{n} day', '{n} days', stats.currentStreak)}
             </AppText>
-            <AppText color={withAlpha(colors.primaryContrast, 0.85)}>Review streak</AppText>
+            <AppText color={withAlpha(colors.primaryContrast, 0.85)}>{tr('Review streak')}</AppText>
           </View>
           <View style={[styles.best, { backgroundColor: withAlpha(colors.primaryContrast, 0.18), borderRadius: radius.md }]}>
-            <AppText variant="caption" color={colors.primaryContrast}>
-              Best
-            </AppText>
+            <AppText variant="caption" color={colors.primaryContrast}>{tr('Best')}</AppText>
             <AppText variant="bodyStrong" color={colors.primaryContrast}>
               {stats.bestStreak}
             </AppText>
@@ -80,7 +79,7 @@ export function StatsScreen() {
         </AppText>
       </View>
 
-      <SectionHeader title="Last 7 days" />
+      <SectionHeader title={tr('Last 7 days')} />
       <Card>
         <View style={styles.chart}>
           {stats.lastWeek.map(d => {
@@ -103,7 +102,7 @@ export function StatsScreen() {
                   />
                 </View>
                 <AppText variant="caption" tone={today ? 'default' : 'muted'}>
-                  {today ? 'Today' : WEEKDAY[new Date(d.day).getDay()]}
+                  {today ? tr('Today') : tr(WEEKDAY[new Date(d.day).getDay()])}
                 </AppText>
               </View>
             );
@@ -112,17 +111,17 @@ export function StatsScreen() {
       </Card>
 
       <View style={[styles.tiles, { marginTop: spacing.lg }]}>
-        <Tile icon="calendar-week" value={String(stats.reviewsThisWeek)} label="Reviews this week" color={colors.primary} />
+        <Tile icon="calendar-week" value={String(stats.reviewsThisWeek)} label={tr('Reviews this week')} color={colors.primary} />
         <View style={{ width: spacing.md }} />
-        <Tile icon="check-decagram-outline" value={String(stats.totalReviews)} label="Reviews in total" color={colors.success} />
+        <Tile icon="check-decagram-outline" value={String(stats.totalReviews)} label={tr('Reviews in total')} color={colors.success} />
       </View>
       <View style={[styles.tiles, { marginTop: spacing.md }]}>
-        <Tile icon="bookshelf" value={String(stats.totalItems)} label="Items saved" color={colors.warning} />
+        <Tile icon="bookshelf" value={String(stats.totalItems)} label={tr('Items saved')} color={colors.warning} />
         <View style={{ width: spacing.md }} />
         <Tile
           icon="clipboard-check-outline"
           value={stats.planner.planned > 0 ? `${Math.round(completion * 100)}%` : '—'}
-          label="Tasks done (7 days)"
+          label={tr('Tasks done (7 days)')}
           color={colors.danger}
         />
       </View>
@@ -130,12 +129,10 @@ export function StatsScreen() {
       {stats.planner.planned > 0 ? (
         <Card style={{ marginTop: spacing.lg }}>
           <View style={styles.row}>
-            <AppText variant="bodyStrong" style={styles.flex}>
-              Day planner
-            </AppText>
+            <AppText variant="bodyStrong" style={styles.flex}>{tr('Day planner')}</AppText>
             <AppText variant="small" tone="secondary">
-              {stats.planner.done}/{stats.planner.planned} tasks · {stats.planner.daysPlanned}{' '}
-              {stats.planner.daysPlanned === 1 ? 'day' : 'days'}
+              {tr('{done}/{total} tasks', { done: stats.planner.done, total: stats.planner.planned })} ·{' '}
+              {trn('{n} day', '{n} days', stats.planner.daysPlanned)}
             </AppText>
           </View>
           <View style={[styles.track, { backgroundColor: withAlpha(colors.success, 0.15), marginTop: spacing.sm }]}>
@@ -146,7 +143,7 @@ export function StatsScreen() {
 
       {stats.byCategory.length > 0 ? (
         <>
-          <SectionHeader title="Your library" />
+          <SectionHeader title={tr('Your library')} />
           <Card>
             {stats.byCategory.map(c => (
               <View key={c.name} style={{ marginBottom: spacing.md }}>

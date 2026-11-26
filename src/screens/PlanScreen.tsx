@@ -39,6 +39,7 @@ import { applyTimeString, formatLongToday, formatTime, toTimeString } from '../u
 import { pickTime } from '../utils/pickers';
 import { ValidationError, describeError, logError } from '../utils/errors';
 
+import { tr, trn } from '../i18n';
 const EXAMPLE = 'Sport 1h\n!Finish the report 2h\nMeeting @14:00 1h\nCall Ahmed 15m\nRead Quran 20m';
 
 type TimelineItem =
@@ -116,12 +117,10 @@ function DayWindowEditor({
   const working = value.workStart !== null;
   return (
     <Card style={{ marginBottom: spacing.lg }}>
-      <AppText variant="bodyStrong" style={{ marginBottom: spacing.sm }}>
-        Working today?
-      </AppText>
+      <AppText variant="bodyStrong" style={{ marginBottom: spacing.sm }}>{tr('Working today?')}</AppText>
       <View style={styles.chips}>
         <Chip
-          label="Yes, I work"
+          label={tr('Yes, I work')}
           icon="briefcase-outline"
           selected={working}
           onPress={() =>
@@ -133,7 +132,7 @@ function DayWindowEditor({
           }
         />
         <Chip
-          label="No, day off"
+          label={tr('No, day off')}
           icon="beach"
           selected={!working}
           onPress={() => onChange({ ...value, workStart: null, workEnd: null })}
@@ -141,10 +140,10 @@ function DayWindowEditor({
       </View>
       {working ? (
         <View style={[styles.timeRow, { marginTop: spacing.sm }]}>
-          <AppText>Work from</AppText>
-          <TimeButton label="Work starts" value={value.workStart!} onChange={workStart => onChange({ ...value, workStart })} />
-          <AppText>to</AppText>
-          <TimeButton label="Work ends" value={value.workEnd!} onChange={workEnd => onChange({ ...value, workEnd })} />
+          <AppText>{tr('Work from')}</AppText>
+          <TimeButton label={tr('Work starts')} value={value.workStart!} onChange={workStart => onChange({ ...value, workStart })} />
+          <AppText>{tr('to')}</AppText>
+          <TimeButton label={tr('Work ends')} value={value.workEnd!} onChange={workEnd => onChange({ ...value, workEnd })} />
         </View>
       ) : null}
       {errors.work ? (
@@ -153,10 +152,10 @@ function DayWindowEditor({
         </AppText>
       ) : null}
       <View style={[styles.timeRow, { marginTop: spacing.md }]}>
-        <AppText>My day from</AppText>
-        <TimeButton label="Day starts" value={value.dayStart} onChange={dayStart => onChange({ ...value, dayStart })} />
-        <AppText>to</AppText>
-        <TimeButton label="Day ends" value={value.dayEnd} onChange={dayEnd => onChange({ ...value, dayEnd })} />
+        <AppText>{tr('My day from')}</AppText>
+        <TimeButton label={tr('Day starts')} value={value.dayStart} onChange={dayStart => onChange({ ...value, dayStart })} />
+        <AppText>{tr('to')}</AppText>
+        <TimeButton label={tr('Day ends')} value={value.dayEnd} onChange={dayEnd => onChange({ ...value, dayEnd })} />
       </View>
       {errors.day ? (
         <AppText variant="caption" color={colors.danger} style={{ marginTop: spacing.xs }}>
@@ -165,8 +164,8 @@ function DayWindowEditor({
       ) : null}
       <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
         {working
-          ? 'Your tasks are planned before work, after work and in free gaps.'
-          : 'The whole day is free for your tasks.'}
+          ? tr('Your tasks are planned before work, after work and in free gaps.')
+          : tr('The whole day is free for your tasks.')}
       </AppText>
     </Card>
   );
@@ -180,7 +179,7 @@ function EditTimeButton({ task, onPress }: { task: PlanTask; onPress: () => void
       onPress={onPress}
       hitSlop={10}
       accessibilityRole="button"
-      accessibilityLabel={`Edit the time of ${task.title}`}
+      accessibilityLabel={tr('Edit the time of {title}', { title: task.title })}
       style={{ paddingLeft: spacing.sm }}
     >
       <Icon name="clock-edit-outline" size={22} color={colors.primary} />
@@ -201,15 +200,14 @@ function CarryOverBanner({ carry, onAdd, onDismiss }: { carry: CarryOver; onAdd:
       <View style={styles.taskRow}>
         <Icon name="calendar-arrow-right" size={20} color={colors.warning} />
         <AppText variant="bodyStrong" style={[styles.flex, { marginLeft: spacing.sm }]}>
-          {carry.lines.length === 1 ? '1 unfinished task' : `${carry.lines.length} unfinished tasks`} from your last plan
-        </AppText>
+          {trn('{n} unfinished task from your last plan', '{n} unfinished tasks from your last plan', carry.lines.length)}</AppText>
       </View>
       <AppText variant="small" tone="secondary" style={{ marginTop: spacing.xs }} numberOfLines={3}>
         {carry.lines.join(' · ')}
       </AppText>
       <View style={[styles.taskRow, { marginTop: spacing.sm }]}>
-        <Button title="Add to today" icon="plus" compact onPress={onAdd} style={{ marginRight: spacing.sm }} />
-        <Button title="Not now" compact variant="ghost" onPress={onDismiss} />
+        <Button title={tr('Add to today')} icon="plus" compact onPress={onAdd} style={{ marginRight: spacing.sm }} />
+        <Button title={tr('Not now')} compact variant="ghost" onPress={onDismiss} />
       </View>
     </View>
   );
@@ -223,13 +221,11 @@ function RoutinesToday({ routines, onManage }: { routines: Routine[]; onManage: 
       <Icon name="repeat" size={18} color={colors.primary} />
       <AppText variant="small" tone="secondary" style={[styles.flex, { marginLeft: spacing.sm }]}>
         {routines.length > 0
-          ? `Added automatically: ${routines.map(r => `${r.title} (${formatDuration(r.durationMin)})`).join(', ')}`
-          : 'No routine today.'}
+          ? tr('Added automatically: {list}', { list: routines.map(r => `${r.title} (${formatDuration(r.durationMin)})`).join(', ') })
+          : tr('No routine today.')}
       </AppText>
       <Pressable onPress={onManage} hitSlop={8} accessibilityRole="button">
-        <AppText variant="small" color={colors.primary}>
-          Routines
-        </AppText>
+        <AppText variant="small" color={colors.primary}>{tr('Routines')}</AppText>
       </Pressable>
     </View>
   );
@@ -241,26 +237,26 @@ function SyntaxHelp() {
     <View style={[styles.help, { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: spacing.md }]}>
       <Icon name="lightbulb-on-outline" size={18} color={colors.primary} />
       <View style={[styles.flex, { marginLeft: spacing.sm }]}>
-        <AppText variant="small">One task per line. Optional:</AppText>
-        <AppText variant="small">• duration: 1h, 1h30, 45m (default 30 min)</AppText>
-        <AppText variant="small">• fixed time: @14:00 or "à 14h"</AppText>
-        <AppText variant="small">• important first: start with !</AppText>
+        <AppText variant="small">{tr('One task per line. Optional:')}</AppText>
+        <AppText variant="small">{tr('• duration: 1h, 1h30, 45m (default 30 min)')}</AppText>
+        <AppText variant="small">{tr('• fixed time: @14:00 or "à 14h"')}</AppText>
+        <AppText variant="small">{tr('• important first: start with !')}</AppText>
       </View>
     </View>
   );
 }
 
 function describeWindow(window: DayWindow, settings: AppSettings): string[] {
-  const work = window.workStart ? `Work ${window.workStart}–${window.workEnd}` : 'Day off';
-  const extras = [`Day ${window.dayStart}–${window.dayEnd}`];
+  const work = window.workStart ? tr('Work {start}–{end}', { start: window.workStart, end: window.workEnd ?? '' }) : tr('Day off');
+  const extras = [tr('Day {start}–{end}', { start: window.dayStart, end: window.dayEnd })];
   if (settings.planLunchBreak) {
-    extras.push(`lunch ${settings.planLunchStart}–${settings.planLunchEnd}`);
+    extras.push(tr('lunch {start}–{end}', { start: settings.planLunchStart, end: settings.planLunchEnd }));
   }
   if (settings.planAvoidPrayers && settings.planPrayerCity) {
-    extras.push('prayer times kept free');
+    extras.push(tr('prayer times kept free'));
   }
   if (settings.planBreakMinutes > 0) {
-    extras.push(`${settings.planBreakMinutes} min break every ${formatDuration(settings.planBreakAfterMinutes)}`);
+    extras.push(tr('{n} min break every {every}', { n: settings.planBreakMinutes, every: formatDuration(settings.planBreakAfterMinutes) }));
   }
   return [work, extras.join(' · ')];
 }
@@ -281,9 +277,7 @@ function TodaySummary({ window, onChange }: { window: DayWindow; onChange: () =>
           </AppText>
         </View>
         <Pressable onPress={onChange} hitSlop={8} accessibilityRole="button">
-          <AppText variant="small" color={colors.primary}>
-            Change for today
-          </AppText>
+          <AppText variant="small" color={colors.primary}>{tr('Change for today')}</AppText>
         </Pressable>
       </View>
     </Card>
@@ -319,7 +313,7 @@ export function PlanScreen() {
   const dictate = async () => {
     setListening(true);
     try {
-      const text = await startSpeech(null, 'Say your tasks, e.g. "sport one hour, then call Ahmed"');
+      const text = await startSpeech(null, tr('Say your tasks, e.g. "sport one hour, then call Ahmed"'));
       const lines = text ? speechToTaskLines(text) : [];
       if (lines.length > 0) {
         setInput(prev => [prev.trim(), ...lines].filter(Boolean).join('\n'));
@@ -327,7 +321,7 @@ export function PlanScreen() {
       }
     } catch (e) {
       logError('plan:voice', e);
-      Alert.alert('Voice input unavailable', describeError(e));
+      Alert.alert(tr('Voice input unavailable'), describeError(e));
     } finally {
       setListening(false);
     }
@@ -344,11 +338,11 @@ export function PlanScreen() {
       setTimingTask(null);
       await reload();
       if (result.warning) {
-        Alert.alert('Notifications not scheduled', result.warning);
+        Alert.alert(tr('Notifications not scheduled'), result.warning);
       }
     } catch (e) {
       logError('plan:timing', e);
-      Alert.alert('Could not change the time', describeError(e));
+      Alert.alert(tr('Could not change the time'), describeError(e));
     } finally {
       setSavingTiming(false);
     }
@@ -366,7 +360,7 @@ export function PlanScreen() {
       setWindowErrors({});
       await reload();
       if (result.warning) {
-        Alert.alert('Notifications not scheduled', result.warning);
+        Alert.alert(tr('Notifications not scheduled'), result.warning);
       }
     } catch (e) {
       if (e instanceof ValidationError) {
@@ -375,7 +369,7 @@ export function PlanScreen() {
         setInputError(Object.values(rest)[0]);
       } else {
         logError('plan:organize', e);
-        Alert.alert('Could not organize your day', describeError(e));
+        Alert.alert(tr('Could not organize your day'), describeError(e));
       }
     } finally {
       setBusy(false);
@@ -410,7 +404,7 @@ export function PlanScreen() {
       await reload();
     } catch (e) {
       logError('plan:toggle', e);
-      Alert.alert('Could not update the task', describeError(e));
+      Alert.alert(tr('Could not update the task'), describeError(e));
     }
   };
 
@@ -429,9 +423,7 @@ export function PlanScreen() {
     return (
       <Screen keyboard>
         <AppText variant="h2">{formatLongToday(now)}</AppText>
-        <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>
-          Write what you have to do today. The app organizes it around your work, lunch and breaks.
-        </AppText>
+        <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>{tr('Write what you have to do today. The app organizes it around your work, lunch and breaks.')}</AppText>
         {customWindow ? (
           <DayWindowEditor
             value={customWindow}
@@ -458,7 +450,7 @@ export function PlanScreen() {
         <SyntaxHelp />
         {speechAvailable ? (
           <Button
-            title={listening ? 'Listening…' : 'Dictate my tasks'}
+            title={listening ? tr('Listening…') : tr('Dictate my tasks')}
             icon="microphone-outline"
             variant="secondary"
             compact
@@ -468,7 +460,7 @@ export function PlanScreen() {
           />
         ) : null}
         <TextField
-          label="Today's to-do list"
+          label={tr('Today\'s to-do list')}
           value={input}
           onChangeText={text => {
             setInput(text);
@@ -481,22 +473,20 @@ export function PlanScreen() {
           style={{ minHeight: 200 }}
         />
         <Button
-          title={plan ? 'Re-organize my day' : 'Organize my day'}
+          title={plan ? tr('Re-organize my day') : tr('Organize my day')}
           icon="clipboard-text-clock-outline"
           loading={busy}
           onPress={() => run(() => organizeToday(input, Date.now(), dayWindow))}
         />
         {plan ? (
           <Button
-            title="Cancel"
+            title={tr('Cancel')}
             variant="ghost"
             onPress={() => setEditing(false)}
             style={{ marginTop: spacing.sm }}
           />
         ) : null}
-        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>
-          Your work days and hours, lunch and breaks are set once in Settings → Day planner.
-        </AppText>
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>{tr('Your work days and hours, lunch and breaks are set once in Settings → Day planner.')}</AppText>
       </Screen>
     );
   }
@@ -510,12 +500,13 @@ export function PlanScreen() {
     <Screen refreshing={loading} onRefresh={reload}>
       <AppText variant="h2">{formatLongToday(now)}</AppText>
       <AppText tone="secondary" style={{ marginTop: spacing.xs }}>
-        {doneCount} of {plan.tasks.length} done{lastEnd ? ` · day ends around ${formatTime(lastEnd)}` : ''}
+        {tr('{done} of {total} done', { done: doneCount, total: plan.tasks.length })}
+        {lastEnd ? tr(' · day ends around {time}', { time: formatTime(lastEnd) }) : ''}
       </AppText>
 
       <View style={[styles.actions, { marginVertical: spacing.lg }]}>
         <Button
-          title="Re-plan from now"
+          title={tr('Re-plan from now')}
           icon="calendar-refresh"
           variant="secondary"
           compact
@@ -524,7 +515,7 @@ export function PlanScreen() {
           style={[styles.flex, { marginRight: spacing.sm }]}
         />
         <Button
-          title="Edit list"
+          title={tr('Edit list')}
           icon="pencil-outline"
           variant="secondary"
           compact
@@ -566,7 +557,7 @@ export function PlanScreen() {
                   color={item.kind === 'prayer' ? colors.success : colors.textMuted}
                 />
                 <AppText tone="muted" style={{ marginLeft: spacing.sm }}>
-                  {item.kind === 'work' ? 'Work' : item.kind === 'prayer' ? item.name : 'Lunch break'}
+                  {item.kind === 'work' ? tr('Work') : item.kind === 'prayer' ? tr(item.name) : tr('Lunch break')}
                 </AppText>
               </View>
             </View>
@@ -584,7 +575,7 @@ export function PlanScreen() {
             </View>
             <Card
               onPress={() => toggle(task)}
-              accessibilityLabel={`${task.title}, ${task.isDone ? 'done' : 'not done'}`}
+              accessibilityLabel={`${task.title}, ${task.isDone ? tr('done') : tr('not done')}`}
               style={[
                 styles.flex,
                 current && { borderColor: colors.primary, borderWidth: 2 },
@@ -607,8 +598,8 @@ export function PlanScreen() {
                   </AppText>
                   <AppText variant="caption" tone="secondary">
                     {formatDuration(task.durationMin)}
-                    {task.fixedStartMin !== null ? ' · 📌 pinned' : ''}
-                    {current ? ' · now' : ''}
+                    {task.fixedStartMin !== null ? tr(' · 📌 pinned') : ''}
+                    {current ? tr(' · now') : ''}
                   </AppText>
                 </View>
                 {!task.isDone ? <EditTimeButton task={task} onPress={() => setTimingTask(task)} /> : null}
@@ -620,7 +611,7 @@ export function PlanScreen() {
 
       {unscheduled.length > 0 ? (
         <>
-          <SectionHeader title="Doesn't fit today" />
+          <SectionHeader title={tr('Doesn\'t fit today')} />
           <Card>
             {unscheduled.map(task => (
               <View key={task.id} style={[styles.taskRow, { paddingVertical: spacing.xs }]}>
@@ -631,16 +622,12 @@ export function PlanScreen() {
                 <EditTimeButton task={task} onPress={() => setTimingTask(task)} />
               </View>
             ))}
-            <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
-              Shorten or pin them with ⏱, remove some tasks, or set a later end of day in Settings.
-            </AppText>
+            <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Shorten or pin them with ⏱, remove some tasks, or set a later end of day in Settings.')}</AppText>
           </Card>
         </>
       ) : null}
 
-      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.lg }}>
-        Tap a task to check it off · ⏱ to change its time or duration.
-      </AppText>
+      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.lg }}>{tr('Tap a task to check it off · ⏱ to change its time or duration.')}</AppText>
 
       <TaskTimeEditor
         task={timingTask}

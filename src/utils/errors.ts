@@ -1,3 +1,6 @@
+
+import { tr } from '../i18n';
+
 /**
  * Centralized error types and helpers.
  * Every layer throws AppError (or a subclass) with a message that is safe to show to the user.
@@ -52,6 +55,10 @@ export class NotFoundError extends AppError {
 }
 
 export function describeError(error: unknown): string {
+  return tr(describeErrorRaw(error));
+}
+
+function describeErrorRaw(error: unknown): string {
   if (error instanceof AppError) {
     return error.userMessage;
   }

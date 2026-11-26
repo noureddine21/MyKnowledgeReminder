@@ -29,11 +29,15 @@ import { formatDateTime, formatRelative } from '../utils/date';
 import { formatRecurrence } from '../utils/recurrence';
 import { ValidationError } from '../utils/errors';
 
+import { tr } from '../i18n';
 function reminderSummary(reminder: Reminder, intervals: number[]): string {
   if (reminder.frequency === 'spaced') {
-    return `Smart schedule · review ${Math.min(reminder.spacedStep + 1, intervals.length)} of ${intervals.length}`;
+    return tr('Smart schedule · review {step} of {total}', {
+      step: Math.min(reminder.spacedStep + 1, intervals.length),
+      total: intervals.length,
+    });
   }
-  return formatRecurrence(reminder.frequency, reminder.repeatInterval) || FREQUENCY_LABELS[reminder.frequency];
+  return formatRecurrence(reminder.frequency, reminder.repeatInterval) || tr(FREQUENCY_LABELS[reminder.frequency]);
 }
 
 export function InformationDetailsScreen({ route, navigation }: RootStackScreenProps<'InformationDetails'>) {
@@ -62,9 +66,9 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
       <Screen scroll={false}>
         <EmptyState
           icon="file-remove-outline"
-          title="Information not found"
-          message="It may have been deleted."
-          actionLabel="Go back"
+          title={tr('Information not found')}
+          message={tr('It may have been deleted.')}
+          actionLabel={tr('Go back')}
           onAction={() => navigation.goBack()}
         />
       </Screen>
@@ -83,14 +87,14 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
       }
       const warning = await setReminderActive(item.id, active);
       if (warning) {
-        Alert.alert('Reminder not scheduled', warning);
+        Alert.alert(tr('Reminder not scheduled'), warning);
       }
       reload();
     } catch (e) {
       if (e instanceof ValidationError) {
-        Alert.alert('Reminder date passed', e.userMessage, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Choose a date', onPress: () => scheduleAnother(item) },
+        Alert.alert(tr('Reminder date passed'), e.userMessage, [
+          { text: tr('Cancel'), style: 'cancel' },
+          { text: tr('Choose a date'), onPress: () => scheduleAnother(item) },
         ]);
       } else {
         handleError(e, 'details:toggle');
@@ -119,21 +123,20 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
         </AppText>
       </Card>
 
-      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
-        Created {formatDateTime(item.createdAt)}
-        {item.updatedAt !== item.createdAt ? ` · Updated ${formatDateTime(item.updatedAt)}` : ''}
+      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Created ')}{formatDateTime(item.createdAt)}
+        {item.updatedAt !== item.createdAt ? tr(' · Updated {date}', { date: formatDateTime(item.updatedAt) }) : ''}
       </AppText>
 
       <View style={[styles.actions, { marginTop: spacing.lg, gap: spacing.sm }]}>
         <Button
-          title={due ? 'Mark as reviewed' : 'Mark reviewed'}
+          title={due ? tr('Mark as reviewed') : tr('Mark reviewed')}
           icon="check"
           onPress={() => markAsReviewed(item)}
           loading={busy}
           style={styles.flex}
         />
         <Button
-          title="Review later"
+          title={tr('Review later')}
           icon="calendar-clock"
           variant="secondary"
           onPress={() => scheduleAnother(item)}
@@ -142,7 +145,7 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
         />
       </View>
 
-      <SectionHeader title="Reminder" />
+      <SectionHeader title={tr('Reminder')} />
       <Card style={{ paddingVertical: spacing.xs }}>
         {reminder ? (
           <>
@@ -151,31 +154,30 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
               title={reminderSummary(reminder, settings.reviewIntervals)}
               subtitle={
                 reminder.isActive && nextAt !== null
-                  ? `${due ? 'Due now · ' : ''}Next: ${formatRelative(nextAt, now)}`
-                  : 'Reminder is off'
+                  ? `${due ? tr('Due now · ') : ''}${tr('Next: {when}', { when: formatRelative(nextAt, now) })}`
+                  : tr('Reminder is off')
               }
               switchValue={reminder.isActive}
               onSwitchChange={toggleReminder}
             />
             {reminder.lastReviewedAt ? (
-              <AppText variant="caption" tone="muted" style={{ paddingBottom: spacing.sm }}>
-                Last reviewed {formatRelative(reminder.lastReviewedAt, now)}
+              <AppText variant="caption" tone="muted" style={{ paddingBottom: spacing.sm }}>{tr('Last reviewed ')}{formatRelative(reminder.lastReviewedAt, now)}
               </AppText>
             ) : null}
           </>
         ) : (
           <ListRow
             icon="bell-plus-outline"
-            title="No reminder"
-            subtitle="Tap to schedule a review"
+            title={tr('No reminder')}
+            subtitle={tr('Tap to schedule a review')}
             onPress={() => scheduleAnother(item)}
           />
         )}
       </Card>
 
-      <SectionHeader title="Review history" />
+      <SectionHeader title={tr('Review history')} />
       {history.length === 0 ? (
-        <AppText tone="muted">Not reviewed yet.</AppText>
+        <AppText tone="muted">{tr('Not reviewed yet.')}</AppText>
       ) : (
         <Card style={{ paddingVertical: spacing.sm }}>
           {history.map(entry => (
@@ -194,9 +196,9 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
       )}
 
       <View style={[styles.actions, { marginTop: spacing.xl, gap: spacing.sm }]}>
-        <Button title="Edit" icon="pencil-outline" variant="ghost" onPress={() => edit(item)} style={styles.flex} />
+        <Button title={tr('Edit')} icon="pencil-outline" variant="ghost" onPress={() => edit(item)} style={styles.flex} />
         <Button
-          title="Delete"
+          title={tr('Delete')}
           icon="delete-outline"
           variant="danger"
           onPress={() => remove(item, () => navigation.goBack())}

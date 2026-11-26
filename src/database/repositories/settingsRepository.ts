@@ -18,6 +18,9 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   if (theme === 'system' || theme === 'light' || theme === 'dark') {
     settings.themeMode = theme;
   }
+  if (raw.language === 'system' || raw.language === 'en' || raw.language === 'fr' || raw.language === 'ar') {
+    settings.language = raw.language;
+  }
   if (raw.reviewIntervals) {
     try {
       const parsed = JSON.parse(raw.reviewIntervals);

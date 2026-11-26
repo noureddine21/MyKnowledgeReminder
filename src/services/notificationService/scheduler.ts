@@ -21,6 +21,7 @@ import {
 } from './messages';
 import { canUseExactAlarms } from './permissions';
 
+import { tr } from '../../i18n';
 let channelReady: Promise<void> | null = null;
 
 /** Creates the Android notification channel (idempotent). */
@@ -98,9 +99,9 @@ export function buildReminderNotification(
       pressAction: { id: 'default', launchActivity: 'default' },
       // No launchActivity: these run in the background without opening the app.
       actions: [
-        { title: '✓ Reviewed', pressAction: { id: NOTIFICATION_ACTIONS.reviewed } },
-        { title: 'Snooze 10 min', pressAction: { id: NOTIFICATION_ACTIONS.snoozeShort } },
-        { title: 'Snooze 1 h', pressAction: { id: NOTIFICATION_ACTIONS.snoozeLong } },
+        { title: tr('✓ Reviewed'), pressAction: { id: NOTIFICATION_ACTIONS.reviewed } },
+        { title: tr('Snooze 10 min'), pressAction: { id: NOTIFICATION_ACTIONS.snoozeShort } },
+        { title: tr('Snooze 1 h'), pressAction: { id: NOTIFICATION_ACTIONS.snoozeLong } },
       ],
       autoCancel: true,
     },

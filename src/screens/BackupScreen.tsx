@@ -15,6 +15,7 @@ import { useAppTheme, withAlpha } from '../theme';
 import { formatDateTime, formatRelative } from '../utils/date';
 import { describeError, logError } from '../utils/errors';
 
+import { tr } from '../i18n';
 function Step({ icon, text }: { icon: string; text: string }) {
   const { colors, spacing } = useAppTheme();
   return (
@@ -42,11 +43,11 @@ export function BackupScreen() {
       if (uri) {
         await update('lastBackupAt', backup.exportedAt);
         const s = summarizeBackup(backup);
-        Alert.alert('Backup saved ✓', `${s.items} items, ${s.categories} categories and ${s.plans} day plans were saved.`);
+        Alert.alert(tr('Backup saved ✓'), tr('{items} items, {categories} categories and {plans} day plans were saved.', { items: s.items, categories: s.categories, plans: s.plans }));
       }
     } catch (e) {
       logError('backup:save', e);
-      Alert.alert('Backup failed', describeError(e));
+      Alert.alert(tr('Backup failed'), describeError(e));
     } finally {
       setBusy(null);
     }
@@ -57,10 +58,10 @@ export function BackupScreen() {
     try {
       const s = await restoreBackup(backup);
       await reload();
-      Alert.alert('Backup restored ✓', `${s.items} items and ${s.plans} day plans are back. Reminders were rescheduled.`);
+      Alert.alert(tr('Backup restored ✓'), tr('{items} items and {plans} day plans are back. Reminders were rescheduled.', { items: s.items, plans: s.plans }));
     } catch (e) {
       logError('backup:restore', e);
-      Alert.alert('Restore failed', describeError(e));
+      Alert.alert(tr('Restore failed'), describeError(e));
     } finally {
       setBusy(null);
     }
@@ -78,19 +79,25 @@ export function BackupScreen() {
       backup = await parseBackup(text);
     } catch (e) {
       logError('backup:open', e);
-      Alert.alert('Cannot use this file', describeError(e));
+      Alert.alert(tr('Cannot use this file'), describeError(e));
       setBusy(null);
       return;
     }
     setBusy(null);
     const s = summarizeBackup(backup);
     Alert.alert(
-      'Replace all your data?',
-      `Backup from ${formatDateTime(s.exportedAt)}: ${s.items} items, ${s.categories} categories, ${s.plans} day plans.\n\n` +
-        'Everything currently in the app will be replaced by this backup.',
+      tr('Replace all your data?'),
+      tr('Backup from {date}: {items} items, {categories} categories, {plans} day plans.', {
+        date: formatDateTime(s.exportedAt),
+        items: s.items,
+        categories: s.categories,
+        plans: s.plans,
+      }) +
+        '\n\n' +
+        tr('Everything currently in the app will be replaced by this backup.'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Replace', style: 'destructive', onPress: () => doRestore(backup) },
+        { text: tr('Cancel'), style: 'cancel' },
+        { text: tr('Replace'), style: 'destructive', onPress: () => doRestore(backup) },
       ],
     );
   };
@@ -106,13 +113,8 @@ export function BackupScreen() {
         <View style={[styles.heroIcon, { backgroundColor: colors.primary }]}>
           <Icon name="shield-check-outline" size={28} color={colors.primaryContrast} />
         </View>
-        <AppText variant="h2" style={{ marginTop: spacing.md }}>
-          Keep your knowledge safe
-        </AppText>
-        <AppText tone="secondary" style={[styles.center, { marginTop: spacing.xs }]}>
-          Your data lives only on this phone. Save a backup file to Google Drive, your email or WhatsApp to never lose
-          it.
-        </AppText>
+        <AppText variant="h2" style={{ marginTop: spacing.md }}>{tr('Keep your knowledge safe')}</AppText>
+        <AppText tone="secondary" style={[styles.center, { marginTop: spacing.xs }]}>{tr('Your data lives only on this phone. Save a backup file to Google Drive, your email or WhatsApp to never lose it.')}</AppText>
         <View
           style={[
             styles.pill,
@@ -131,20 +133,18 @@ export function BackupScreen() {
           />
           <AppText variant="small" style={{ marginLeft: spacing.xs }}>
             {settings.lastBackupAt
-              ? `Last backup: ${formatRelative(settings.lastBackupAt, now)}`
-              : 'No backup yet'}
+              ? tr('Last backup: {when}', { when: formatRelative(settings.lastBackupAt, now) })
+              : tr('No backup yet')}
           </AppText>
         </View>
       </View>
 
       <Card style={{ marginTop: spacing.lg }}>
-        <AppText variant="h3" style={{ marginBottom: spacing.md }}>
-          Save a backup
-        </AppText>
+        <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Save a backup')}</AppText>
         <Step icon="numeric-1-circle-outline" text="Tap the button and choose where to save (Drive, Downloads…)." />
         <Step icon="numeric-2-circle-outline" text="All items, categories, reminders, plans and settings are included." />
         <Button
-          title="Save a backup"
+          title={tr('Save a backup')}
           icon="content-save-outline"
           loading={busy === 'save'}
           disabled={!available || busy !== null}
@@ -154,13 +154,11 @@ export function BackupScreen() {
       </Card>
 
       <Card style={{ marginTop: spacing.lg }}>
-        <AppText variant="h3" style={{ marginBottom: spacing.md }}>
-          Restore
-        </AppText>
+        <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Restore')}</AppText>
         <Step icon="swap-horizontal" text="New phone or reinstalled app? Pick your backup file to get everything back." />
         <Step icon="alert-circle-outline" text="Restoring replaces all the data currently in the app." />
         <Button
-          title="Restore from a file"
+          title={tr('Restore from a file')}
           icon="backup-restore"
           variant="secondary"
           loading={busy === 'restore'}
@@ -170,9 +168,7 @@ export function BackupScreen() {
         />
       </Card>
 
-      <AppText variant="caption" tone="muted" style={[styles.center, { marginTop: spacing.lg }]}>
-        The app never uploads anything by itself: you choose where the file goes.
-      </AppText>
+      <AppText variant="caption" tone="muted" style={[styles.center, { marginTop: spacing.lg }]}>{tr('The app never uploads anything by itself: you choose where the file goes.')}</AppText>
     </Screen>
   );
 }

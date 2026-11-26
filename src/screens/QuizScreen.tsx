@@ -9,6 +9,7 @@ import { useAppTheme, withAlpha } from '../theme';
 import { formatRelative } from '../utils/date';
 import { describeError, logError } from '../utils/errors';
 
+import { tr, trn } from '../i18n';
 const PRACTICE_SIZE = 10;
 
 function shuffle<T>(items: T[]): T[] {
@@ -43,7 +44,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
       }
     } catch (e) {
       logError('quiz:load', e);
-      Alert.alert('Could not start the quiz', describeError(e));
+      Alert.alert(tr('Could not start the quiz'), describeError(e));
       navigation.goBack();
     }
   }, [practice, navigation]);
@@ -53,7 +54,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
   }, [load]);
 
   useEffect(() => {
-    navigation.setOptions({ title: practice ? 'Practice' : 'Quiz' });
+    navigation.setOptions({ title: practice ? tr('Practice') : tr('Quiz') });
   }, [navigation, practice]);
 
   const current = items?.[index];
@@ -84,7 +85,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
       setIndex(i => i + 1);
     } catch (e) {
       logError('quiz:answer', e);
-      Alert.alert('Could not save your answer', describeError(e));
+      Alert.alert(tr('Could not save your answer'), describeError(e));
     } finally {
       setBusy(false);
     }
@@ -100,14 +101,10 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
         <View style={[styles.bigIcon, { backgroundColor: withAlpha(colors.success, 0.15) }]}>
           <Icon name="check-all" size={40} color={colors.success} />
         </View>
-        <AppText variant="h2" style={[styles.textCenter, { marginTop: spacing.lg }]}>
-          Nothing to review now
-        </AppText>
-        <AppText tone="secondary" style={[styles.textCenter, { marginTop: spacing.sm }]}>
-          You're up to date. Want to practice with random items from your library?
-        </AppText>
+        <AppText variant="h2" style={[styles.textCenter, { marginTop: spacing.lg }]}>{tr('Nothing to review now')}</AppText>
+        <AppText tone="secondary" style={[styles.textCenter, { marginTop: spacing.sm }]}>{tr('You\'re up to date. Want to practice with random items from your library?')}</AppText>
         <Button
-          title="Practice with 10 items"
+          title={tr('Practice with 10 items')}
           icon="cards-outline"
           onPress={() => navigation.replace('Quiz', { practice: true })}
           style={{ marginTop: spacing.lg, alignSelf: 'stretch' }}
@@ -122,18 +119,17 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
       <View style={[styles.center, { backgroundColor: colors.background, padding: spacing.xl }]}>
         <AppText style={styles.emoji}>🎉</AppText>
         <AppText variant="h2" style={[styles.textCenter, { marginTop: spacing.md }]}>
-          {practice ? 'Practice done!' : 'Review done!'}
+          {practice ? tr('Practice done!') : tr('Review done!')}
         </AppText>
         <AppText tone="secondary" style={[styles.textCenter, { marginTop: spacing.sm }]}>
-          {total} {total === 1 ? 'item' : 'items'} reviewed. Barak Allahu fik!
-        </AppText>
+          {trn('{n} item reviewed. Barak Allahu fik!', '{n} items reviewed. Barak Allahu fik!', total)}</AppText>
         {!practice ? (
           <View style={[styles.statsRow, { marginTop: spacing.xl }]}>
             {(
               [
-                ['Hard', stats.hard, colors.danger],
-                ['Good', stats.good, colors.primary],
-                ['Easy', stats.easy, colors.success],
+                [tr('Hard'), stats.hard, colors.danger],
+                [tr('Good'), stats.good, colors.primary],
+                [tr('Easy'), stats.easy, colors.success],
               ] as const
             ).map(([label, value, color]) => (
               <View
@@ -150,7 +146,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
             ))}
           </View>
         ) : null}
-        <Button title="Back" onPress={() => navigation.goBack()} style={{ marginTop: spacing.xl, alignSelf: 'stretch' }} />
+        <Button title={tr('Back')} onPress={() => navigation.goBack()} style={{ marginTop: spacing.xl, alignSelf: 'stretch' }} />
       </View>
     );
   }
@@ -165,8 +161,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
             {index + 1} / {items.length}
           </AppText>
           {current?.reminder && !practice ? (
-            <AppText variant="caption" tone="muted">
-              Due {formatRelative(current.reminder.scheduledAt, Date.now())}
+            <AppText variant="caption" tone="muted">{tr('Due {when}', { when: formatRelative(current.reminder.scheduledAt, Date.now()) })}
             </AppText>
           ) : null}
         </View>
@@ -209,9 +204,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
               accessibilityRole="button"
             >
               <Icon name="head-lightbulb-outline" size={32} color={colors.primary} />
-              <AppText tone="secondary" style={[styles.textCenter, { marginTop: spacing.sm }]}>
-                Try to remember it first…{'\n'}then tap to reveal
-              </AppText>
+              <AppText tone="secondary" style={[styles.textCenter, { marginTop: spacing.sm }]}>{tr('Try to remember it first…')}{'\n'}{tr('then tap to reveal')}</AppText>
             </Pressable>
           )}
         </View>
@@ -220,14 +213,14 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
       <View style={{ padding: spacing.lg, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
         {revealed ? (
           practice ? (
-            <Button title="Next" icon="arrow-right" loading={busy} onPress={() => answer('good')} />
+            <Button title={tr('Next')} icon="arrow-right" loading={busy} onPress={() => answer('good')} />
           ) : (
             <View style={styles.row}>
               {(
                 [
-                  ['hard', 'Hard', 'Again tomorrow', colors.danger],
-                  ['good', 'Good', 'Next review', colors.primary],
-                  ['easy', 'Easy', 'Skip ahead', colors.success],
+                  ['hard', tr('Hard'), tr('Again tomorrow'), colors.danger],
+                  ['good', tr('Good'), tr('Next review'), colors.primary],
+                  ['easy', tr('Easy'), tr('Skip ahead'), colors.success],
                 ] as const
               ).map(([grade, label, hint, color], i) => (
                 <Pressable
@@ -258,7 +251,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
             </View>
           )
         ) : (
-          <Button title="Show answer" icon="eye-outline" onPress={() => setRevealed(true)} />
+          <Button title={tr('Show answer')} icon="eye-outline" onPress={() => setRevealed(true)} />
         )}
       </View>
     </View>

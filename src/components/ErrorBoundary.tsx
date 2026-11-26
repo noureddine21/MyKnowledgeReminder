@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { logError } from '../utils/errors';
 
+import { tr } from '../i18n';
 interface State {
   error: Error | null;
 }
@@ -27,16 +28,14 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
     }
     return (
       <View style={styles.container}>
-        <Text style={styles.title}>Something went wrong</Text>
-        <Text style={styles.message}>
-          The screen could not be displayed. Your saved information is safe on this device.
-        </Text>
+        <Text style={styles.title}>{tr('Something went wrong')}</Text>
+        <Text style={styles.message}>{tr('The screen could not be displayed. Your saved information is safe on this device.')}</Text>
         <Pressable
           style={styles.button}
           onPress={() => this.setState({ error: null })}
           accessibilityRole="button"
         >
-          <Text style={styles.buttonText}>Try again</Text>
+          <Text style={styles.buttonText}>{tr('Try again')}</Text>
         </Pressable>
       </View>
     );

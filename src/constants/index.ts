@@ -9,6 +9,7 @@ export const DEFAULT_REVIEW_INTERVALS = [1, 3, 7, 30];
 
 export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: 'system',
+  language: 'system',
   reviewIntervals: DEFAULT_REVIEW_INTERVALS,
   useSmartScheduleByDefault: true,
   defaultReminderTime: '09:00',

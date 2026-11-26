@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { AppText, Card, Chip, CityPicker, ListRow, Screen, SectionHeader } from '../components';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
@@ -7,6 +7,7 @@ import { useSettings } from '../hooks/useSettings';
 import type { AppSettings, ThemeMode } from '../models';
 import type { RootStackScreenProps } from '../navigation/types';
 import { scheduleDailyItems } from '../services/dailyItemService';
+import { applyLanguage } from '../i18n/apply';
 import { applyPlannerSettings } from '../services/planService';
 import { PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS, PLAN_PRAYER_MINUTES_OPTIONS } from '../constants';
 import { formatDuration } from '../services/dayPlanner';
@@ -15,6 +16,7 @@ import { useAppTheme } from '../theme';
 import { applyTimeString, formatRelative, formatTime, toTimeString } from '../utils/date';
 import { pickTime } from '../utils/pickers';
 
+import { tr } from '../i18n';
 /** Monday first; values are JS weekdays (0 = Sunday). */
 const WEEK_DAYS: { value: number; label: string }[] = [
   { value: 1, label: 'Mon' },
@@ -24,6 +26,13 @@ const WEEK_DAYS: { value: number; label: string }[] = [
   { value: 5, label: 'Fri' },
   { value: 6, label: 'Sat' },
   { value: 0, label: 'Sun' },
+];
+
+const LANGUAGE_OPTIONS: { value: AppSettings['language']; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'Français' },
+  { value: 'ar', label: 'العربية' },
 ];
 
 const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
@@ -54,6 +63,21 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
     }
   };
 
+  const changeLanguage = async (language: AppSettings['language']) => {
+    try {
+      const { restartNeeded } = applyLanguage(language);
+      await update('language', language);
+      // Notification texts are written in the chosen language.
+      await applyPlannerSettings();
+      await scheduleDailyItems();
+      if (restartNeeded) {
+        Alert.alert(tr('Restart needed'), tr('Close and reopen the app to switch the layout direction.'));
+      }
+    } catch (e) {
+      handleError(e, 'settings:language');
+    }
+  };
+
   /** Saves an "item of the day" setting and reschedules the next 7 days. */
   const updateDaily = async <K extends 'dailyItemEnabled' | 'dailyItemTime' | 'dailyItemSource'>(
     key: K,
@@ -81,14 +105,25 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
 
   return (
     <Screen>
-      <AppText variant="h3" style={{ marginBottom: spacing.md }}>
-        Appearance
-      </AppText>
+      <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Language')}</AppText>
+      <View style={[styles.wrap, { marginBottom: spacing.lg }]}>
+        {LANGUAGE_OPTIONS.map(option => (
+          <Chip
+            key={option.value}
+            label={option.value === 'system' ? tr(option.label) : option.label}
+            icon={option.value === 'system' ? 'translate' : undefined}
+            selected={settings.language === option.value}
+            onPress={() => changeLanguage(option.value)}
+          />
+        ))}
+      </View>
+
+      <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Appearance')}</AppText>
       <View style={styles.wrap}>
         {THEME_OPTIONS.map(option => (
           <Chip
             key={option.value}
-            label={option.label}
+            label={tr(option.label)}
             icon={option.icon}
             selected={settings.themeMode === option.value}
             onPress={() => update('themeMode', option.value).catch(e => handleError(e, 'settings:theme'))}
@@ -96,86 +131,86 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         ))}
       </View>
 
-      <SectionHeader title="Reminders & organization" />
+      <SectionHeader title={tr('Reminders & organization')} />
       <Card style={{ paddingVertical: spacing.xs }}>
         <ListRow
           icon="bell-cog-outline"
-          title="Reminder settings"
+          title={tr('Reminder settings')}
           subtitle={
             state && !state.granted
-              ? 'Notifications are disabled'
-              : `Smart schedule: ${settings.reviewIntervals.join(', ')} days · ${settings.defaultReminderTime}`
+              ? tr('Notifications are disabled')
+              : tr('Smart schedule: {days} days · {time}', { days: settings.reviewIntervals.join(', '), time: settings.defaultReminderTime })
           }
           iconColor={state && !state.granted ? colors.danger : undefined}
           onPress={() => navigation.navigate('ReminderSettings')}
         />
         <ListRow
           icon="cloud-upload-outline"
-          title="Backup & restore"
+          title={tr('Backup & restore')}
           subtitle={
             settings.lastBackupAt
-              ? `Last backup: ${formatRelative(settings.lastBackupAt, Date.now())}`
-              : 'No backup yet — save one to never lose your data'
+              ? tr('Last backup: {when}', { when: formatRelative(settings.lastBackupAt, Date.now()) })
+              : tr('No backup yet — save one to never lose your data')
           }
           iconColor={settings.lastBackupAt ? undefined : colors.warning}
           onPress={() => navigation.navigate('Backup')}
         />
         <ListRow
           icon="tag-multiple-outline"
-          title="Categories"
-          subtitle="Create, edit and delete categories"
+          title={tr('Categories')}
+          subtitle={tr('Create, edit and delete categories')}
           onPress={() => navigation.navigate('Categories')}
         />
       </Card>
 
-      <SectionHeader title="Day planner" />
+      <SectionHeader title={tr('Day planner')} />
       <Card style={{ paddingVertical: spacing.xs }}>
         <ListRow
           icon="weather-sunset-up"
-          title="Morning reminder"
-          subtitle="Asks you to write today's to-do list"
+          title={tr('Morning reminder')}
+          subtitle={tr('Asks you to write today\'s to-do list')}
           switchValue={settings.planMorningReminder}
           onSwitchChange={value => updatePlanner('planMorningReminder', value)}
         />
         <ListRow
           icon="alarm"
-          title="Reminder time"
+          title={tr('Reminder time')}
           value={settings.planMorningTime}
           onPress={() => editTime('planMorningTime')}
           disabled={!settings.planMorningReminder}
         />
         <ListRow
           icon="clock-start"
-          title="Day starts"
+          title={tr('Day starts')}
           value={settings.planDayStart}
           onPress={() => editTime('planDayStart')}
         />
-        <ListRow icon="clock-end" title="Day ends" value={settings.planDayEnd} onPress={() => editTime('planDayEnd')} />
+        <ListRow icon="clock-end" title={tr('Day ends')} value={settings.planDayEnd} onPress={() => editTime('planDayEnd')} />
         <ListRow
           icon="food-fork-drink"
-          title="Keep lunch free"
+          title={tr('Keep lunch free')}
           subtitle={`${settings.planLunchStart}–${settings.planLunchEnd}`}
           switchValue={settings.planLunchBreak}
           onSwitchChange={value => updatePlanner('planLunchBreak', value)}
         />
         <ListRow
           icon="clock-outline"
-          title="Lunch starts"
+          title={tr('Lunch starts')}
           value={settings.planLunchStart}
           onPress={() => editTime('planLunchStart')}
           disabled={!settings.planLunchBreak}
         />
         <ListRow
           icon="clock-outline"
-          title="Lunch ends"
+          title={tr('Lunch ends')}
           value={settings.planLunchEnd}
           onPress={() => editTime('planLunchEnd')}
           disabled={!settings.planLunchBreak}
         />
         <ListRow
           icon="bell-ring-outline"
-          title="Notify at each task"
-          subtitle="A notification when a planned task starts"
+          title={tr('Notify at each task')}
+          subtitle={tr('A notification when a planned task starts')}
           switchValue={settings.planTaskNotifications}
           onSwitchChange={value => updatePlanner('planTaskNotifications', value)}
         />
@@ -184,24 +219,22 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
       <Card style={{ paddingVertical: spacing.xs, marginTop: spacing.md }}>
         <ListRow
           icon="repeat"
-          title="Routines"
-          subtitle="Tasks added to your plan automatically (sport, Quran…)"
+          title={tr('Routines')}
+          subtitle={tr('Tasks added to your plan automatically (sport, Quran…)')}
           onPress={() => navigation.navigate('Routines')}
         />
       </Card>
 
-      <SectionHeader title="Work schedule" />
+      <SectionHeader title={tr('Work schedule')} />
       <Card>
-        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-          Work days — the planner never puts tasks during your work hours
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Work days — the planner never puts tasks during your work hours')}</AppText>
         <View style={styles.wrap}>
           {WEEK_DAYS.map(day => {
             const selected = settings.planWorkDays.includes(day.value);
             return (
               <Chip
                 key={day.value}
-                label={day.label}
+                label={tr(day.label)}
                 selected={selected}
                 onPress={() =>
                   updatePlanner(
@@ -215,16 +248,16 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
             );
           })}
         </View>
-        <ListRow icon="briefcase-outline" title="Work starts" value={settings.planWorkStart} onPress={() => editTime('planWorkStart')} />
-        <ListRow icon="briefcase-check-outline" title="Work ends" value={settings.planWorkEnd} onPress={() => editTime('planWorkEnd')} />
+        <ListRow icon="briefcase-outline" title={tr('Work starts')} value={settings.planWorkStart} onPress={() => editTime('planWorkStart')} />
+        <ListRow icon="briefcase-check-outline" title={tr('Work ends')} value={settings.planWorkEnd} onPress={() => editTime('planWorkEnd')} />
       </Card>
 
-      <SectionHeader title="Prayer times" />
+      <SectionHeader title={tr('Prayer times')} />
       <Card>
         <ListRow
           icon="mosque"
-          title="Don't plan tasks during prayers"
-          subtitle="Times are calculated on the phone for your city"
+          title={tr('Don\'t plan tasks during prayers')}
+          subtitle={tr('Times are calculated on the phone for your city')}
           switchValue={settings.planAvoidPrayers}
           onSwitchChange={value => {
             updatePlanner('planAvoidPrayers', value);
@@ -235,13 +268,11 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         />
         <ListRow
           icon="map-marker-outline"
-          title="City"
-          value={prayerCity ? prayerCity.name : 'Choose'}
+          title={tr('City')}
+          value={prayerCity ? prayerCity.name : tr('Choose')}
           onPress={() => setCityPickerOpen(true)}
         />
-        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
-          Time kept free from each prayer (Jumu'ah: 1 h)
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>{tr('Time kept free from each prayer (Jumu\'ah: 1 h)')}</AppText>
         <View style={styles.wrap}>
           {PLAN_PRAYER_MINUTES_OPTIONS.map(minutes => (
             <Chip
@@ -255,18 +286,16 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         {todayPrayers.length > 0 ? (
           <View style={[styles.prayers, { marginTop: spacing.sm }]}>
             {todayPrayers.map(prayer => (
-              <View key={prayer.name} style={styles.prayer}>
+              <View key={tr(prayer.name)} style={styles.prayer}>
                 <AppText variant="caption" tone="secondary">
-                  {prayer.name}
+                  {tr(prayer.name)}
                 </AppText>
                 <AppText variant="bodyStrong">{formatTime(prayer.start)}</AppText>
               </View>
             ))}
           </View>
         ) : null}
-        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
-          Only used to organize your day — your prayer app keeps handling the adhan.
-        </AppText>
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Only used to organize your day — your prayer app keeps handling the adhan.')}</AppText>
       </Card>
       <CityPicker
         visible={cityPickerOpen}
@@ -278,24 +307,20 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         }}
       />
 
-      <SectionHeader title="Breaks" />
+      <SectionHeader title={tr('Breaks')} />
       <Card>
-        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-          Break length
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Break length')}</AppText>
         <View style={styles.wrap}>
           {PLAN_BREAK_MINUTES_OPTIONS.map(minutes => (
             <Chip
               key={minutes}
-              label={minutes === 0 ? 'No break' : `${minutes} min`}
+              label={minutes === 0 ? tr('No break') : `${minutes} min`}
               selected={settings.planBreakMinutes === minutes}
               onPress={() => updatePlanner('planBreakMinutes', minutes)}
             />
           ))}
         </View>
-        <AppText variant="caption" tone="secondary" style={{ marginVertical: spacing.sm }}>
-          After every
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginVertical: spacing.sm }}>{tr('After every')}</AppText>
         <View style={styles.wrap}>
           {PLAN_BREAK_AFTER_OPTIONS.map(minutes => (
             <Chip
@@ -306,23 +331,21 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
             />
           ))}
         </View>
-        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
-          Tasks are also separated by 5 minutes.
-        </AppText>
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Tasks are also separated by 5 minutes.')}</AppText>
       </Card>
 
-      <SectionHeader title="Item of the day" />
+      <SectionHeader title={tr('Item of the day')} />
       <Card>
         <ListRow
           icon="book-open-variant"
-          title="Morning inspiration"
-          subtitle="One item of your library every morning"
+          title={tr('Morning inspiration')}
+          subtitle={tr('One item of your library every morning')}
           switchValue={settings.dailyItemEnabled}
           onSwitchChange={value => updateDaily('dailyItemEnabled', value)}
         />
         <ListRow
           icon="clock-outline"
-          title="Time"
+          title={tr('Time')}
           value={settings.dailyItemTime}
           disabled={!settings.dailyItemEnabled}
           onPress={async () => {
@@ -334,13 +357,13 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         />
         <View style={[styles.wrap, { marginTop: spacing.sm }]}>
           <Chip
-            label="All my items"
+            label={tr('All my items')}
             icon="bookshelf"
             selected={settings.dailyItemSource === 'all'}
             onPress={() => updateDaily('dailyItemSource', 'all')}
           />
           <Chip
-            label="Quran & Hadith"
+            label={tr('Quran & Hadith')}
             icon="book-open-page-variant"
             selected={settings.dailyItemSource === 'faith'}
             onPress={() => updateDaily('dailyItemSource', 'faith')}
@@ -348,18 +371,16 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         </View>
       </Card>
 
-      <SectionHeader title="About" />
+      <SectionHeader title={tr('About')} />
       <Card style={{ paddingVertical: spacing.xs }}>
-        <ListRow icon="information-outline" title="My Knowledge Reminder" value="v1.0.0" />
+        <ListRow icon="information-outline" title={tr('My Knowledge Reminder')} value={tr('v1.0.0')} />
         <ListRow
           icon="shield-lock-outline"
-          title="Private & offline"
-          subtitle="All your information is stored only on this device (SQLite). No account, no cloud."
+          title={tr('Private & offline')}
+          subtitle={tr('All your information is stored only on this device (SQLite). No account, no cloud.')}
         />
       </Card>
-      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>
-        Uninstalling the app or clearing its data permanently deletes your saved information.
-      </AppText>
+      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>{tr('Uninstalling the app or clearing its data permanently deletes your saved information.')}</AppText>
     </Screen>
   );
 }

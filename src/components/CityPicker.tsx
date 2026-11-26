@@ -5,6 +5,7 @@ import { useAppTheme } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 
+import { tr } from '../i18n';
 interface Props {
   visible: boolean;
   selectedId: string | null;
@@ -35,10 +36,8 @@ export function CityPicker({ visible, selectedId, onSelect, onClose }: Props) {
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={[styles.flex, { backgroundColor: colors.background, padding: spacing.lg }]}>
         <View style={[styles.header, { marginBottom: spacing.md }]}>
-          <AppText variant="h2" style={styles.flex}>
-            Your city
-          </AppText>
-          <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel="Close">
+          <AppText variant="h2" style={styles.flex}>{tr('Your city')}</AppText>
+          <Pressable onPress={onClose} hitSlop={10} accessibilityRole="button" accessibilityLabel={tr('Close')}>
             <Icon name="close" size={24} color={colors.text} />
           </Pressable>
         </View>
@@ -52,7 +51,7 @@ export function CityPicker({ visible, selectedId, onSelect, onClose }: Props) {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search a city or country"
+            placeholder={tr('Search a city or country')}
             placeholderTextColor={colors.textMuted}
             style={[typography.body, styles.flex, { color: colors.text, marginLeft: spacing.sm }]}
             autoFocus
@@ -64,9 +63,7 @@ export function CityPicker({ visible, selectedId, onSelect, onClose }: Props) {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingVertical: spacing.md }}
           ListEmptyComponent={
-            <AppText tone="muted" style={{ marginTop: spacing.lg }}>
-              No city found. Choose the closest one.
-            </AppText>
+            <AppText tone="muted" style={{ marginTop: spacing.lg }}>{tr('No city found. Choose the closest one.')}</AppText>
           }
           renderItem={({ item }) => {
             const selected = item.id === selectedId;

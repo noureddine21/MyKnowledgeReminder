@@ -1,3 +1,4 @@
+import { tr } from '../i18n';
 /**
  * Small, dependency-free date helpers working with epoch milliseconds in local time.
  */
@@ -84,7 +85,7 @@ const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 
 export function formatDate(ts: number): string {
   const d = new Date(ts);
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  return `${d.getDate()} ${tr(MONTHS[d.getMonth()])} ${d.getFullYear()}`;
 }
 
 export function formatTime(ts: number): string {
@@ -97,26 +98,26 @@ export function formatDateTime(ts: number): string {
 
 export function formatLongToday(now: number): string {
   const d = new Date(now);
-  return `${WEEKDAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  return `${tr(WEEKDAYS[d.getDay()])}, ${d.getDate()} ${tr(MONTHS[d.getMonth()])}`;
 }
 
 /** Human friendly relative label: "Today, 09:00", "Tomorrow, 09:00", "In 3 days", "2 days ago". */
 export function formatRelative(ts: number, now: number): string {
   const days = diffInCalendarDays(now, ts);
   if (days === 0) {
-    return `Today, ${formatTime(ts)}`;
+    return tr('Today, {time}', { time: formatTime(ts) });
   }
   if (days === 1) {
-    return `Tomorrow, ${formatTime(ts)}`;
+    return tr('Tomorrow, {time}', { time: formatTime(ts) });
   }
   if (days === -1) {
-    return `Yesterday, ${formatTime(ts)}`;
+    return tr('Yesterday, {time}', { time: formatTime(ts) });
   }
   if (days > 1 && days < 7) {
-    return `In ${days} days`;
+    return tr('In {n} days', { n: days });
   }
   if (days < -1 && days > -7) {
-    return `${-days} days ago`;
+    return tr('{n} days ago', { n: -days });
   }
   return formatDate(ts);
 }

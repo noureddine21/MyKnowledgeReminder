@@ -9,6 +9,7 @@ import { Card } from './Card';
 import { CategoryBadge } from './CategoryBadge';
 import { Icon } from './Icon';
 
+import { tr } from '../i18n';
 interface Props {
   item: InformationItem;
   now: number;
@@ -43,7 +44,7 @@ export function InformationCard({ item, now, onPress, footer }: Props) {
             color={nextAt !== null ? colors.primary : colors.textMuted}
           />
           <AppText variant="caption" tone="muted" style={styles.footerText}>
-            {nextAt !== null ? `Next review: ${formatRelative(nextAt, now)}` : 'No active reminder'}
+            {nextAt !== null ? tr('Next review: {when}', { when: formatRelative(nextAt, now) }) : tr('No active reminder')}
           </AppText>
         </View>
       )}

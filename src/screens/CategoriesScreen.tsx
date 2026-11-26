@@ -24,6 +24,7 @@ import {
 import { useAppTheme, withAlpha } from '../theme';
 import { ValidationError } from '../utils/errors';
 
+import { tr, trn } from '../i18n';
 interface Draft {
   id: number | null;
   name: string;
@@ -74,14 +75,14 @@ export function CategoriesScreen() {
 
   const confirmDelete = (c: CategoryWithCount) => {
     Alert.alert(
-      `Delete "${c.name}"?`,
+      tr('Delete "{name}"?', { name: c.name }),
       c.itemCount > 0
-        ? `${c.itemCount} item(s) in this category will be moved to "Other". Nothing else is deleted.`
+        ? tr('{n} item(s) in this category will be moved to "Other". Nothing else is deleted.', { n: c.itemCount })
         : 'This category is empty.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: tr('Cancel'), style: 'cancel' },
         {
-          text: 'Delete',
+          text: tr('Delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -111,7 +112,7 @@ export function CategoriesScreen() {
             {draft.id === null ? 'New category' : 'Edit category'}
           </AppText>
           <TextField
-            label="Name"
+            label={tr('Name')}
             required
             value={draft.name}
             editable={!draft.isDefault}
@@ -120,13 +121,11 @@ export function CategoriesScreen() {
               setNameError(undefined);
             }}
             maxLength={MAX_CATEGORY_NAME_LENGTH}
-            placeholder="e.g. Arabic, Azure, Quotes"
+            placeholder={tr('e.g. Arabic, Azure, Quotes')}
             error={nameError}
-            hint={draft.isDefault ? 'Built-in categories keep their name.' : undefined}
+            hint={draft.isDefault ? tr('Built-in categories keep their name.') : undefined}
           />
-          <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-            Color
-          </AppText>
+          <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Color')}</AppText>
           <View style={[styles.wrap, { marginBottom: spacing.md }]}>
             {CATEGORY_COLORS.map(color => (
               <Pressable
@@ -144,9 +143,7 @@ export function CategoriesScreen() {
               </Pressable>
             ))}
           </View>
-          <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-            Icon
-          </AppText>
+          <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Icon')}</AppText>
           <View style={[styles.wrap, { marginBottom: spacing.md }]}>
             {CATEGORY_ICONS.map(icon => (
               <Pressable
@@ -169,13 +166,13 @@ export function CategoriesScreen() {
             ))}
           </View>
           <View style={[styles.row, { gap: spacing.sm }]}>
-            <Button title="Save" icon="check" onPress={save} loading={saving} style={styles.flex} />
-            <Button title="Cancel" variant="ghost" onPress={() => setDraft(null)} style={styles.flex} />
+            <Button title={tr('Save')} icon="check" onPress={save} loading={saving} style={styles.flex} />
+            <Button title={tr('Cancel')} variant="ghost" onPress={() => setDraft(null)} style={styles.flex} />
           </View>
         </Card>
       ) : (
         <Button
-          title="New category"
+          title={tr('New category')}
           icon="plus"
           onPress={() => {
             setNameError(undefined);
@@ -184,7 +181,7 @@ export function CategoriesScreen() {
         />
       )}
 
-      <SectionHeader title={`${data.length} categories`} />
+      <SectionHeader title={tr('{n} categories', { n: data.length })} />
       {data.map(c => (
         <Card key={c.id} style={{ marginBottom: spacing.sm, paddingVertical: spacing.md }}>
           <View style={styles.row}>
@@ -194,7 +191,7 @@ export function CategoriesScreen() {
             <View style={[styles.flex, { marginLeft: spacing.md }]}>
               <AppText variant="bodyStrong">{c.name}</AppText>
               <AppText variant="caption" tone="muted">
-                {c.itemCount} {c.itemCount === 1 ? 'item' : 'items'}
+                {trn('{n} item', '{n} items', c.itemCount)}
                 {c.isDefault ? ' · Built-in' : ''}
               </AppText>
             </View>

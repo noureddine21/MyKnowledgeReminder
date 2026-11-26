@@ -28,6 +28,7 @@ import { toScheduleTarget } from './reminderSync';
 import { setPlanTaskDone } from './planService';
 import { markReviewed } from './reviewService';
 
+import { resolveLanguage, setLanguage, tr } from '../i18n';
 async function dismissAll(informationId: number, shownId: string | undefined): Promise<void> {
   if (shownId) {
     await dismissDisplayedNotification(shownId);
@@ -42,8 +43,8 @@ async function showActionError(informationId: number): Promise<void> {
     await ensureChannel();
     await notifee.displayNotification({
       id: `action-error-${informationId}`,
-      title: 'Could not update the reminder',
-      body: 'Open the app to review this item.',
+      title: tr('Could not update the reminder'),
+      body: tr('Open the app to review this item.'),
       data: { informationId: String(informationId) },
       android: {
         channelId: NOTIFICATION_CHANNEL_ID,
@@ -99,8 +100,21 @@ async function handlePlanEvent(event: Event): Promise<void> {
   }
 }
 
+/** Background events can run before the app UI: make sure texts use the chosen language. */
+async function ensureLanguage(): Promise<void> {
+  try {
+    const repos = await getRepositories();
+    setLanguage(resolveLanguage((await repos.settings.getAll()).language));
+  } catch (error) {
+    logError('notifications:language', error);
+  }
+}
+
 export async function handleNotificationEvent(event: Event): Promise<void> {
   const notification = event.detail.notification;
+  if (event.type === EventType.ACTION_PRESS) {
+    await ensureLanguage();
+  }
   if (isPlanNotification(notification?.data)) {
     await handlePlanEvent(event);
     return;

@@ -1,5 +1,6 @@
 import type { ReminderFrequency } from '../models';
 
+import { tr } from '../i18n';
 const UNITS: Partial<Record<ReminderFrequency, [string, string]>> = {
   hourly: ['hour', 'hours'],
   daily: ['day', 'days'],
@@ -21,5 +22,7 @@ export function formatRecurrence(frequency: ReminderFrequency, interval = 1): st
   if (!UNITS[frequency]) {
     return '';
   }
-  return interval === 1 ? `Every ${repeatUnit(frequency, 1)}` : `Every ${interval} ${repeatUnit(frequency, interval)}`;
+  return interval === 1
+    ? tr(`Every ${repeatUnit(frequency, 1)}`)
+    : tr(`Every {n} ${repeatUnit(frequency, interval)}`, { n: interval });
 }

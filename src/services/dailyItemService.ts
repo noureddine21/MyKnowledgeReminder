@@ -18,6 +18,7 @@ import {
   buildExpandedText,
 } from './notificationService';
 
+import { tr } from '../i18n';
 export const DAILY_ITEM_PREFIX = 'daily-item-';
 export const DAILY_ITEM_DAYS = 7;
 const FAITH_CATEGORIES = ['quran', 'hadith'];
@@ -81,7 +82,7 @@ export async function scheduleDailyItems(now: number = Date.now(), random: () =>
         {
           id: `${DAILY_ITEM_PREFIX}${i}`,
           title: isFaith ? `📖 ${item.title}` : `💡 ${item.title}`,
-          subtitle: 'Item of the day',
+          subtitle: tr('Item of the day'),
           body: item.content.replace(/\s+/g, ' ').slice(0, 140),
           data: { informationId: String(item.id) },
           android: {

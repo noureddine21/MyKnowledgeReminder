@@ -25,6 +25,7 @@ import { useAppTheme } from '../theme';
 import { addDays, applyTimeString } from '../utils/date';
 import { ValidationError, describeError, logError } from '../utils/errors';
 
+import { tr } from '../i18n';
 interface FormState {
   title: string;
   content: string;
@@ -165,7 +166,7 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
       );
       setErrors({});
       if (result.warning) {
-        Alert.alert('Reminder not scheduled', result.warning);
+        Alert.alert(tr('Reminder not scheduled'), result.warning);
       }
       if (!isEdit) {
         setForm(emptyForm(settings));
@@ -177,7 +178,7 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
         setErrors(error.fieldErrors);
       } else {
         logError('form:save', error);
-        Alert.alert('Could not save', describeError(error));
+        Alert.alert(tr('Could not save'), describeError(error));
       }
     } finally {
       setSaving(false);
@@ -209,29 +210,27 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
         </View>
       ) : null}
       <TextField
-        label="Title"
+        label={tr('Title')}
         required
         value={form.title}
         onChangeText={t => update('title', t)}
-        placeholder="e.g. Ayat al-Kursi, Azure Artifacts feeds…"
+        placeholder={tr('e.g. Ayat al-Kursi, Azure Artifacts feeds…')}
         maxLength={MAX_TITLE_LENGTH}
         error={errors.title}
         returnKeyType="next"
       />
       <TextField
-        label="Content"
+        label={tr('Content')}
         required
         multiline
         value={form.content}
         onChangeText={t => update('content', t)}
-        placeholder="Write the information you want to remember"
+        placeholder={tr('Write the information you want to remember')}
         maxLength={MAX_CONTENT_LENGTH}
         error={errors.content}
       />
 
-      <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-        Category
-      </AppText>
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Category')}</AppText>
       <View style={styles.chips}>
         {(categories ?? []).map(category => (
           <Chip
@@ -244,30 +243,26 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
           />
         ))}
       </View>
-      <AppText variant="caption" tone="muted" style={{ marginBottom: spacing.lg }}>
-        Tap again to unselect. Create your own categories in Settings → Categories.
-      </AppText>
+      <AppText variant="caption" tone="muted" style={{ marginBottom: spacing.lg }}>{tr('Tap again to unselect. Create your own categories in Settings → Categories.')}</AppText>
 
       <TextField
-        label="Source / reference"
+        label={tr('Source / reference')}
         value={form.source}
         onChangeText={t => update('source', t)}
-        placeholder="e.g. Surah Al-Baqarah 2:255, Microsoft Learn…"
+        placeholder={tr('e.g. Surah Al-Baqarah 2:255, Microsoft Learn…')}
         maxLength={MAX_SOURCE_LENGTH}
         error={errors.source}
       />
 
       <DateTimeField
-        label="Creation date"
+        label={tr('Creation date')}
         mode="date"
         value={form.createdAt}
         onChange={value => update('createdAt', value)}
         error={errors.createdAt}
       />
 
-      <AppText variant="h3" style={{ marginBottom: spacing.md }}>
-        Reminder
-      </AppText>
+      <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Reminder')}</AppText>
       <ReminderEditor
         value={form.reminder}
         onChange={value => update('reminder', value)}
@@ -279,13 +274,11 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
       />
 
       {Object.keys(errors).length > 0 ? (
-        <AppText variant="small" color={colors.danger} style={{ marginBottom: spacing.md }}>
-          Please fix the highlighted fields.
-        </AppText>
+        <AppText variant="small" color={colors.danger} style={{ marginBottom: spacing.md }}>{tr('Please fix the highlighted fields.')}</AppText>
       ) : null}
 
       <Button
-        title={isEdit ? 'Save changes' : 'Save information'}
+        title={isEdit ? tr('Save changes') : tr('Save information')}
         icon="content-save-outline"
         onPress={save}
         loading={saving}

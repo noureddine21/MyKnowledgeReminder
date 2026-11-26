@@ -17,6 +17,7 @@ import { getDueToday, type DueItem } from '../services/reviewService';
 import { useAppTheme } from '../theme';
 import { formatLongToday, formatRelative } from '../utils/date';
 
+import { tr, trn } from '../i18n';
 export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>) {
   const { colors, spacing } = useAppTheme();
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -62,7 +63,7 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
             ]}
           >
             <AppText variant="caption" color={due.overdue ? colors.danger : colors.warning}>
-              {due.overdue ? `Overdue · ${formatRelative(due.dueAt, data.now)}` : formatRelative(due.dueAt, data.now)}
+              {due.overdue ? tr('Overdue · {when}', { when: formatRelative(due.dueAt, data.now) }) : formatRelative(due.dueAt, data.now)}
             </AppText>
           </View>
         </View>
@@ -80,8 +81,7 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
           {item.content}
         </AppText>
         {item.source && isOpen ? (
-          <AppText variant="small" tone="muted" style={{ marginTop: spacing.xs }}>
-            Source: {item.source}
+          <AppText variant="small" tone="muted" style={{ marginTop: spacing.xs }}>{tr('Source: ')}{item.source}
           </AppText>
         ) : null}
         <Pressable onPress={() => toggle(item.id)} hitSlop={8} accessibilityRole="button">
@@ -91,9 +91,9 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
         </Pressable>
 
         <View style={[styles.row, { marginTop: spacing.md, gap: spacing.sm }]}>
-          <Button title="Reviewed" icon="check" onPress={() => markAsReviewed(item)} loading={busy} style={styles.flex} compact />
+          <Button title={tr('Reviewed')} icon="check" onPress={() => markAsReviewed(item)} loading={busy} style={styles.flex} compact />
           <Button
-            title="Later"
+            title={tr('Later')}
             icon="calendar-clock"
             variant="secondary"
             onPress={() => scheduleAnother(item)}
@@ -101,8 +101,8 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
             style={styles.flex}
             compact
           />
-          <IconButton icon="pencil-outline" label="Edit" color={colors.textSecondary} onPress={() => edit(item)} />
-          <IconButton icon="delete-outline" label="Delete" color={colors.danger} onPress={() => remove(item)} />
+          <IconButton icon="pencil-outline" label={tr('Edit')} color={colors.textSecondary} onPress={() => edit(item)} />
+          <IconButton icon="delete-outline" label={tr('Delete')} color={colors.danger} onPress={() => remove(item)} />
         </View>
       </Card>
     );
@@ -123,26 +123,23 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
               {formatLongToday(data.now).toUpperCase()}
             </AppText>
             <AppText variant="h2">
-              {data.items.length} {data.items.length === 1 ? 'item' : 'items'} to review
-            </AppText>
+              {trn('{n} item to review', '{n} items to review', data.items.length)}</AppText>
             <Button
-              title="Start the quiz"
+              title={tr('Start the quiz')}
               icon="head-lightbulb-outline"
               onPress={() => navigation.navigate('Quiz')}
               style={{ marginTop: spacing.md }}
             />
-            <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>
-              Try to remember each item before seeing it — the best way to memorize.
-            </AppText>
+            <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>{tr('Try to remember each item before seeing it — the best way to memorize.')}</AppText>
           </View>
         ) : null
       }
       ListEmptyComponent={
         <EmptyState
           icon="check-decagram-outline"
-          title="All caught up!"
-          message="Nothing to review today. Items appear here on their reminder date."
-          actionLabel="Practice anyway"
+          title={tr('All caught up!')}
+          message={tr('Nothing to review today. Items appear here on their reminder date.')}
+          actionLabel={tr('Practice anyway')}
           onAction={() => navigation.navigate('Quiz', { practice: true })}
         />
       }

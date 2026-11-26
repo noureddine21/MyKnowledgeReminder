@@ -10,6 +10,7 @@ import { applyTimeString } from '../utils/date';
 import { ValidationError, describeError, logError } from '../utils/errors';
 import { pickTime } from '../utils/pickers';
 
+import { tr } from '../i18n';
 const DAYS = [
   { value: 1, short: 'M', label: 'Mon' },
   { value: 2, short: 'T', label: 'Tue' },
@@ -28,15 +29,15 @@ const hhmm = (minutes: number) =>
 function describeDays(days: number[]): string {
   const set = new Set(days);
   if (set.size === 7) {
-    return 'Every day';
+    return tr('Every day');
   }
   if (set.size === 5 && [1, 2, 3, 4, 5].every(d => set.has(d))) {
-    return 'Weekdays';
+    return tr('Weekdays');
   }
   if (set.size === 2 && set.has(0) && set.has(6)) {
-    return 'Weekends';
+    return tr('Weekends');
   }
-  return DAYS.filter(d => set.has(d.value)).map(d => d.label).join(' · ');
+  return DAYS.filter(d => set.has(d.value)).map(d => tr(d.label)).join(' · ');
 }
 
 function DayDots({ days }: { days: number[] }) {
@@ -54,7 +55,7 @@ function DayDots({ days }: { days: number[] }) {
             ]}
           >
             <AppText variant="caption" color={on ? colors.primaryContrast : colors.textMuted}>
-              {d.short}
+              {tr(d.label + '_short')}
             </AppText>
           </View>
         );
@@ -93,7 +94,7 @@ function RoutineEditor({
         setErrors(e.fieldErrors);
       } else {
         logError('routines:save', e);
-        Alert.alert('Could not save the routine', describeError(e));
+        Alert.alert(tr('Could not save the routine'), describeError(e));
       }
     } finally {
       setSaving(false);
@@ -104,17 +105,17 @@ function RoutineEditor({
     if (editingId === undefined) {
       return;
     }
-    Alert.alert('Delete this routine?', form.title, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tr('Delete this routine?'), form.title, [
+      { text: tr('Cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: tr('Delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await deleteRoutine(editingId);
             onSaved();
           } catch (e) {
-            Alert.alert('Could not delete', describeError(e));
+            Alert.alert(tr('Could not delete'), describeError(e));
           }
         },
       },
@@ -131,7 +132,7 @@ function RoutineEditor({
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="Close" />
+      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={tr('Close')} />
       <View
         style={[
           styles.sheet,
@@ -139,26 +140,25 @@ function RoutineEditor({
         ]}
       >
         <AppText variant="h2" style={{ marginBottom: spacing.md }}>
-          {editingId === undefined ? 'New routine' : 'Edit routine'}
+          {editingId === undefined ? tr('New routine') : tr('Edit routine')}
         </AppText>
         <TextField
-          label="Name"
+          label={tr('Name')}
           required
           value={form.title}
           onChangeText={title => set({ title })}
-          placeholder="e.g. Sport, Read Quran, Revise French"
+          placeholder={tr('e.g. Sport, Read Quran, Revise French')}
           error={errors.title}
           maxLength={150}
         />
 
-        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-          Days {errors.days ? <AppText variant="caption" color={colors.danger}>— {errors.days}</AppText> : null}
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Days ')}{errors.days ? <AppText variant="caption" color={colors.danger}>— {errors.days}</AppText> : null}
         </AppText>
         <View style={[styles.wrap, { marginBottom: spacing.md }]}>
           {DAYS.map(d => (
             <Chip
               key={d.value}
-              label={d.label}
+              label={tr(d.label)}
               selected={form.days.includes(d.value)}
               onPress={() =>
                 set({ days: form.days.includes(d.value) ? form.days.filter(x => x !== d.value) : [...form.days, d.value] })
@@ -167,9 +167,7 @@ function RoutineEditor({
           ))}
         </View>
 
-        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-          Duration
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Duration')}</AppText>
         <View style={[styles.wrap, { marginBottom: spacing.md }]}>
           {DURATIONS.map(m => (
             <Chip key={m} label={formatDuration(m)} selected={form.durationMin === m} onPress={() => set({ durationMin: m })} />
@@ -178,13 +176,13 @@ function RoutineEditor({
 
         <View style={[styles.row, styles.between, { marginBottom: spacing.sm }]}>
           <View style={styles.flex}>
-            <AppText variant="bodyStrong">Fixed time</AppText>
+            <AppText variant="bodyStrong">{tr('Fixed time')}</AppText>
             <AppText variant="caption" tone="secondary">
-              {form.fixedStartMin === null ? 'The app chooses the best moment' : `Always at ${hhmm(form.fixedStartMin)}`}
+              {form.fixedStartMin === null ? tr('The app chooses the best moment') : tr('Always at {time}', { time: hhmm(form.fixedStartMin) })}
             </AppText>
           </View>
           {form.fixedStartMin === null ? (
-            <Button title="Set" compact variant="secondary" icon="clock-outline" onPress={chooseTime} />
+            <Button title={tr('Set')} compact variant="secondary" icon="clock-outline" onPress={chooseTime} />
           ) : (
             <View style={styles.row}>
               <Button title={hhmm(form.fixedStartMin)} compact variant="secondary" onPress={chooseTime} />
@@ -197,20 +195,18 @@ function RoutineEditor({
 
         <View style={[styles.row, styles.between, { marginBottom: spacing.lg }]}>
           <View style={styles.flex}>
-            <AppText variant="bodyStrong">Important ⭐</AppText>
-            <AppText variant="caption" tone="secondary">
-              Placed before the other tasks
-            </AppText>
+            <AppText variant="bodyStrong">{tr('Important ⭐')}</AppText>
+            <AppText variant="caption" tone="secondary">{tr('Placed before the other tasks')}</AppText>
           </View>
           <Switch value={form.important} onValueChange={important => set({ important })} />
         </View>
 
         <View style={styles.row}>
           {editingId !== undefined ? (
-            <Button title="Delete" variant="danger" compact icon="delete-outline" onPress={remove} style={{ marginRight: spacing.sm }} />
+            <Button title={tr('Delete')} variant="danger" compact icon="delete-outline" onPress={remove} style={{ marginRight: spacing.sm }} />
           ) : null}
-          <Button title="Cancel" variant="ghost" onPress={onClose} style={[styles.flex, { marginRight: spacing.sm }]} />
-          <Button title="Save" icon="check" loading={saving} onPress={save} style={styles.flex} />
+          <Button title={tr('Cancel')} variant="ghost" onPress={onClose} style={[styles.flex, { marginRight: spacing.sm }]} />
+          <Button title={tr('Save')} icon="check" loading={saving} onPress={save} style={styles.flex} />
         </View>
       </View>
     </Modal>
@@ -228,21 +224,19 @@ export function RoutinesScreen() {
       await saveRoutine({ ...routine, isActive }, routine.id);
       await reload();
     } catch (e) {
-      Alert.alert('Could not update the routine', describeError(e));
+      Alert.alert(tr('Could not update the routine'), describeError(e));
     }
   };
 
   return (
     <Screen refreshing={loading} onRefresh={reload}>
-      <AppText tone="secondary" style={{ marginBottom: spacing.lg }}>
-        Routines are added to your day plan automatically on their days — no need to write them every morning.
-      </AppText>
+      <AppText tone="secondary" style={{ marginBottom: spacing.lg }}>{tr('Routines are added to your day plan automatically on their days — no need to write them every morning.')}</AppText>
 
       {routines && routines.length === 0 ? (
         <EmptyState
           icon="repeat"
-          title="No routines yet"
-          message="Add things you do regularly: sport, Quran, revision…"
+          title={tr('No routines yet')}
+          message={tr('Add things you do regularly: sport, Quran, revision…')}
         />
       ) : null}
 
@@ -260,7 +254,7 @@ export function RoutinesScreen() {
               <AppText variant="bodyStrong">{routine.title}</AppText>
               <AppText variant="caption" tone="secondary">
                 {formatDuration(routine.durationMin)}
-                {routine.fixedStartMin !== null ? ` · at ${hhmm(routine.fixedStartMin)}` : ''} · {describeDays(routine.days)}
+                {routine.fixedStartMin !== null ? tr(' · at {time}', { time: hhmm(routine.fixedStartMin) }) : ''} · {describeDays(routine.days)}
               </AppText>
             </View>
             <Switch value={routine.isActive} onValueChange={value => toggle(routine, value)} />
@@ -270,7 +264,7 @@ export function RoutinesScreen() {
       ))}
 
       <Button
-        title="Add a routine"
+        title={tr('Add a routine')}
         icon="plus"
         onPress={() => setEditing({ value: EMPTY })}
         style={{ marginTop: spacing.sm }}

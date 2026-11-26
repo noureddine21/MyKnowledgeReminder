@@ -1,4 +1,5 @@
-/**
+
+import { tr } from '../../i18n';/**
  * Builds human friendly notification texts for a reminder.
  */
 
@@ -17,15 +18,15 @@ export function buildReminderMessage(itemTitle: string, categoryName: string | n
 
   switch (category) {
     case 'quran':
-      return { title: 'Time to review!', body: `Time to review your saved Quran verse: ${title}` };
+      return { title: tr('Time to review!'), body: tr('Time to review your saved Quran verse: {title}', { title }) };
     case 'hadith':
-      return { title: 'Time to review!', body: `Time to review your saved Hadith: ${title}` };
+      return { title: tr('Time to review!'), body: tr('Time to review your saved Hadith: {title}', { title }) };
     case 'french':
-      return { title: 'Time to review!', body: `Practice your French: ${title}` };
+      return { title: tr('Time to review!'), body: tr('Practice your French: {title}', { title }) };
     case 'technology':
-      return { title: 'Time to review!', body: `Remember your ${title} notes.` };
+      return { title: tr('Time to review!'), body: tr('Remember your {title} notes.', { title }) };
     default:
-      return { title: 'Time to review!', body: `Remember: ${title}` };
+      return { title: tr('Time to review!'), body: tr('Remember: {title}', { title }) };
   }
 }
 

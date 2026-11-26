@@ -13,6 +13,7 @@ import { DateTimeField } from './DateTimeField';
 import { Icon } from './Icon';
 import { ListRow } from './ListRow';
 
+import { tr } from '../i18n';
 interface Props {
   value: ReminderInput;
   onChange: (value: ReminderInput) => void;
@@ -40,15 +41,15 @@ function describeRepeat(value: ReminderInput): string {
   const every = formatRecurrence(value.frequency, value.repeatInterval || 1);
   switch (value.frequency) {
     case 'hourly':
-      return `${every}, starting ${start} at ${time}.`;
+      return tr('{every}, starting {start} at {time}.', { every, start, time });
     case 'daily':
-      return `${every} at ${time}, starting ${start}.`;
+      return tr('{every} at {time}, starting {start}.', { every, start, time });
     case 'weekly':
-      return `${every} on the same weekday at ${time}, starting ${start}.`;
+      return tr('{every} on the same weekday at {time}, starting {start}.', { every, start, time });
     case 'monthly':
-      return `${every} on the same day at ${time}, starting ${start}.`;
+      return tr('{every} on the same day at {time}, starting {start}.', { every, start, time });
     default:
-      return `Once, on ${start} at ${time}.`;
+      return tr('Once, on {start} at {time}.', { start, time });
   }
 }
 
@@ -60,22 +61,20 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
     <Card style={{ marginBottom: spacing.lg }}>
       <ListRow
         icon={value.enabled ? 'bell-ring-outline' : 'bell-off-outline'}
-        title="Remind me to review"
-        subtitle={value.enabled ? 'A notification will remind you' : 'No reminder for this item'}
+        title={tr('Remind me to review')}
+        subtitle={value.enabled ? tr('A notification will remind you') : tr('No reminder for this item')}
         switchValue={value.enabled}
         onSwitchChange={enabled => set({ enabled })}
       />
 
       {value.enabled ? (
         <View style={{ marginTop: spacing.sm }}>
-          <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-            Frequency
-          </AppText>
+          <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Frequency')}</AppText>
           <View style={styles.chips}>
             {REMINDER_FREQUENCIES.map(f => (
               <Chip
                 key={f}
-                label={FREQUENCY_LABELS[f]}
+                label={tr(FREQUENCY_LABELS[f])}
                 icon={FREQUENCY_ICONS[f]}
                 selected={value.frequency === f}
                 onPress={() => set({ frequency: f })}
@@ -86,13 +85,12 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
           {value.frequency === 'spaced' ? (
             <>
               <DateTimeField
-                label="Reminder time"
+                label={tr('Reminder time')}
                 mode="time"
                 value={value.scheduledAt}
                 onChange={scheduledAt => set({ scheduledAt })}
               />
-              <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
-                Review dates (days after creation: {intervals.join(', ')})
+              <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Review dates (days after creation: ')}{intervals.join(', ')})
               </AppText>
               {spacedReviewDates(createdAt, intervals, value.scheduledAt).map((date, index) => {
                 const past = date <= now;
@@ -107,22 +105,19 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
                       variant="small"
                       tone={past ? 'muted' : 'default'}
                       style={[styles.dateText, past && styles.past]}
-                    >
-                      Review {index + 1}: {formatDate(date)} at {formatTime(date)}
+                    >{tr('Review ')}{index + 1}: {formatDate(date)}{' '}{tr('at')}{' '}{formatTime(date)}
                     </AppText>
                   </View>
                 );
               })}
-              <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>
-                Past dates are skipped. Customize intervals in Settings → Reminder settings.
-              </AppText>
+              <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>{tr('Past dates are skipped. Customize intervals in Settings → Reminder settings.')}</AppText>
             </>
           ) : (
             <>
               {isRepeating(value.frequency) ? (
                 <View style={{ marginBottom: spacing.md }}>
                   <View style={styles.everyRow}>
-                    <AppText>Every</AppText>
+                    <AppText>{tr('Every')}</AppText>
                     <TextInput
                       value={value.repeatInterval ? String(value.repeatInterval) : ''}
                       onChangeText={text => {
@@ -155,7 +150,7 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
                 </View>
               ) : null}
               <DateTimeField
-                label={value.frequency === 'once' ? 'Reminder date & time' : 'First reminder'}
+                label={value.frequency === tr('once') ? tr('Reminder date & time') : tr('First reminder')}
                 mode="datetime"
                 value={value.scheduledAt}
                 minimumDate={now}

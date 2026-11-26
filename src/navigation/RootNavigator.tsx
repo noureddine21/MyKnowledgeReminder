@@ -26,6 +26,7 @@ import { shadow, useAppTheme } from '../theme';
 import { flushPendingNavigation, navigationRef } from './navigationRef';
 import type { RootStackParamList, TabParamList } from './types';
 
+import { tr } from '../i18n';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -50,7 +51,7 @@ function AddTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) 
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Add information"
+        accessibilityLabel={tr('Add information')}
         style={({ pressed }) => [
           styles.addButton,
           {
@@ -90,15 +91,15 @@ function Tabs() {
         tabBarIcon: props => TabIcon({ route: route.name, ...props }),
       })}
     >
-      <Tab.Screen name="Home" component={DashboardScreen} options={{ headerShown: false, title: 'Home' }} />
-      <Tab.Screen name="Library" component={InformationListScreen} options={{ title: 'My Information' }} />
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ headerShown: false, title: tr('Home') }} />
+      <Tab.Screen name="Library" component={InformationListScreen} options={{ title: tr('My Information') }} />
       <Tab.Screen
         name="AddInformation"
         component={AddInformationScreen}
-        options={{ title: 'Add', headerTitle: 'Add Information', tabBarButton: AddTabButton }}
+        options={{ title: tr('Add'), headerTitle: tr('Add Information'), tabBarButton: AddTabButton }}
       />
-      <Tab.Screen name="Plan" component={PlanScreen} options={{ title: 'Plan', headerTitle: 'My Day' }} />
-      <Tab.Screen name="ReviewToday" component={ReviewTodayScreen} options={{ title: 'Review', headerTitle: 'Review Today' }} />
+      <Tab.Screen name="Plan" component={PlanScreen} options={{ title: tr('Plan'), headerTitle: tr('My Day') }} />
+      <Tab.Screen name="ReviewToday" component={ReviewTodayScreen} options={{ title: tr('Review'), headerTitle: tr('Review Today') }} />
     </Tab.Navigator>
   );
 }
@@ -135,15 +136,15 @@ export function RootNavigator() {
         }}
       >
         <Stack.Screen name="Tabs" component={Tabs} options={{ headerShown: false }} />
-        <Stack.Screen name="InformationDetails" component={InformationDetailsScreen} options={{ title: 'Details' }} />
-        <Stack.Screen name="EditInformation" component={EditInformationScreen} options={{ title: 'Edit Information' }} />
+        <Stack.Screen name="InformationDetails" component={InformationDetailsScreen} options={{ title: tr('Details') }} />
+        <Stack.Screen name="EditInformation" component={EditInformationScreen} options={{ title: tr('Edit Information') }} />
         <Stack.Screen name="Categories" component={CategoriesScreen} />
-        <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: 'Reminder Settings' }} />
-        <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & restore' }} />
-        <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
-        <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
-        <Stack.Screen name="Stats" component={StatsScreen} options={{ title: 'Statistics' }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: tr('Reminder Settings') }} />
+        <Stack.Screen name="Backup" component={BackupScreen} options={{ title: tr('Backup & restore') }} />
+        <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: tr('Routines') }} />
+        <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: tr('Quiz') }} />
+        <Stack.Screen name="Stats" component={StatsScreen} options={{ title: tr('Statistics') }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -9,6 +9,7 @@ import { Button } from './Button';
 import { Chip } from './Chip';
 import { Icon } from './Icon';
 
+import { tr } from '../i18n';
 export interface TaskTiming {
   durationMin: number;
   /** Minutes after midnight, or null to let the planner place the task. */
@@ -71,7 +72,7 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onCancel}>
-      <Pressable style={styles.backdrop} onPress={onCancel} accessibilityLabel="Close" />
+      <Pressable style={styles.backdrop} onPress={onCancel} accessibilityLabel={tr('Close')} />
       <View
         style={[
           styles.sheet,
@@ -87,14 +88,12 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
           {task.title}
         </AppText>
 
-        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
-          Start time
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>{tr('Start time')}</AppText>
         <View style={styles.row}>
           <Pressable
             onPress={chooseStart}
             accessibilityRole="button"
-            accessibilityLabel="Choose start time"
+            accessibilityLabel={tr('Choose start time')}
             style={[
               styles.timeButton,
               { borderColor: colors.border, borderRadius: radius.md, paddingHorizontal: spacing.md },
@@ -107,9 +106,7 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
           </Pressable>
           {fixedStartMin !== null ? (
             <Pressable onPress={() => setFixedStartMin(null)} hitSlop={8} style={{ marginLeft: spacing.md }}>
-              <AppText variant="small" color={colors.primary}>
-                Let the app choose
-              </AppText>
+              <AppText variant="small" color={colors.primary}>{tr('Let the app choose')}</AppText>
             </Pressable>
           ) : null}
         </View>
@@ -119,9 +116,7 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
             : 'Not pinned: the app places this task automatically.'}
         </AppText>
 
-        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
-          Duration
-        </AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>{tr('Duration')}</AppText>
         <View style={styles.wrap}>
           {durations.map(minutes => (
             <Chip
@@ -134,9 +129,9 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
         </View>
 
         <View style={[styles.row, { marginTop: spacing.lg }]}>
-          <Button title="Cancel" variant="ghost" onPress={onCancel} style={[styles.flex, { marginRight: spacing.sm }]} />
+          <Button title={tr('Cancel')} variant="ghost" onPress={onCancel} style={[styles.flex, { marginRight: spacing.sm }]} />
           <Button
-            title="Save & re-plan"
+            title={tr('Save & re-plan')}
             icon="calendar-refresh"
             loading={saving}
             onPress={() => onSave({ durationMin, fixedStartMin })}
