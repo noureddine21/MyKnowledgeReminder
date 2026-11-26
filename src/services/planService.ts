@@ -4,7 +4,7 @@
  */
 import { getRepositories, inTransaction } from '../database/repositories';
 import type { PlanTaskData } from '../database/repositories/planRepository';
-import type { AppSettings, DayPlan } from '../models';
+import type { AppSettings, DayPlan, DayWindow } from '../models';
 import { addDays } from '../utils/date';
 import { ValidationError, describeError, logError } from '../utils/errors';
 import { dateKey, organizeDay, parseTaskList, type ParsedTask } from './dayPlanner';
@@ -32,13 +32,53 @@ export async function getTodayPlan(now: number = Date.now()): Promise<DayPlan | 
   return repos.plans.findByDate(dateKey(now));
 }
 
-function dayOptions(settings: AppSettings, now: number) {
+/** True from Monday to Friday. */
+export function isWeekday(ts: number): boolean {
+  const day = new Date(ts).getDay();
+  return day >= 1 && day <= 5;
+}
+
+/** Window proposed when planning: settings day hours; work hours on weekdays, day off on weekends. */
+export function proposedWindow(settings: AppSettings, now: number): DayWindow {
+  const working = isWeekday(now);
+  return {
+    dayStart: settings.planDayStart,
+    dayEnd: settings.planDayEnd,
+    workStart: working ? settings.planWorkStart : null,
+    workEnd: working ? settings.planWorkEnd : null,
+  };
+}
+
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+/** Field errors for an invalid window (empty object when valid). */
+export function validateWindow(window: DayWindow): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!TIME.test(window.dayStart) || !TIME.test(window.dayEnd) || window.dayEnd <= window.dayStart) {
+    errors.day = 'The end of your day must be after its start.';
+  }
+  const working = window.workStart !== null || window.workEnd !== null;
+  if (
+    working &&
+    (!window.workStart ||
+      !window.workEnd ||
+      !TIME.test(window.workStart) ||
+      !TIME.test(window.workEnd) ||
+      window.workEnd <= window.workStart)
+  ) {
+    errors.work = 'Work must end after it starts.';
+  }
+  return errors;
+}
+
+function dayOptions(window: DayWindow, settings: AppSettings, now: number) {
   return {
     day: now,
     now,
-    dayStart: settings.planDayStart,
-    dayEnd: settings.planDayEnd,
+    dayStart: window.dayStart,
+    dayEnd: window.dayEnd,
     lunchBreak: settings.planLunchBreak,
+    work: window.workStart && window.workEnd ? { start: window.workStart, end: window.workEnd } : null,
   };
 }
 
@@ -77,7 +117,11 @@ export async function applyPlannerSettings(now: number = Date.now()): Promise<vo
 }
 
 /** Organizes today's to-do list (replacing today's plan) and saves it. */
-export async function organizeToday(rawInput: string, now: number = Date.now()): Promise<PlanResult> {
+export async function organizeToday(
+  rawInput: string,
+  now: number = Date.now(),
+  window?: DayWindow,
+): Promise<PlanResult> {
   const input = rawInput.trim();
   if (input.length > MAX_PLAN_INPUT_LENGTH) {
     throw new ValidationError({ input: `The list must be at most ${MAX_PLAN_INPUT_LENGTH} characters.` });
@@ -89,11 +133,21 @@ export async function organizeToday(rawInput: string, now: number = Date.now()):
 
   const repos = await getRepositories();
   const settings = await repos.settings.getAll();
-  const organized = organizeDay(tasks, dayOptions(settings, now));
+  const dayWindow = window ?? proposedWindow(settings, now);
+  const windowErrors = validateWindow(dayWindow);
+  if (Object.keys(windowErrors).length > 0) {
+    throw new ValidationError(windowErrors);
+  }
+  const organized = organizeDay(tasks, dayOptions(dayWindow, settings, now));
   const key = dateKey(now);
 
   await inTransaction(async tx => {
-    await tx.plans.replace(key, input, organized, now);
+    await tx.plans.replace(key, input, organized, now, dayWindow);
+    if (dayWindow.workStart && dayWindow.workEnd) {
+      // Remember the work hours for the next work day.
+      await tx.settings.set('planWorkStart', dayWindow.workStart);
+      await tx.settings.set('planWorkEnd', dayWindow.workEnd);
+    }
     await tx.plans.deleteBefore(dateKey(addDays(now, -KEEP_DAYS)));
   });
 
@@ -111,6 +165,7 @@ export async function replanRemaining(now: number = Date.now()): Promise<PlanRes
     throw new ValidationError({ input: 'There is no plan for today yet.' });
   }
   const settings = await repos.settings.getAll();
+  const dayWindow = plan.window ?? proposedWindow(settings, now);
   const remaining: ParsedTask[] = plan.tasks
     .filter(t => !t.isDone)
     .map(t => ({
@@ -120,7 +175,7 @@ export async function replanRemaining(now: number = Date.now()): Promise<PlanRes
       important: t.important,
       position: t.position,
     }));
-  const organized = organizeDay(remaining, dayOptions(settings, now));
+  const organized = organizeDay(remaining, dayOptions(dayWindow, settings, now));
   const byPosition = new Map(plan.tasks.map(t => [t.position, t]));
 
   const data: PlanTaskData[] = plan.tasks
@@ -132,7 +187,7 @@ export async function replanRemaining(now: number = Date.now()): Promise<PlanRes
   }
   data.sort((a, b) => a.position - b.position);
 
-  await inTransaction(tx => tx.plans.replace(key, plan.rawInput, data, now));
+  await inTransaction(tx => tx.plans.replace(key, plan.rawInput, data, now, dayWindow));
   const warning = await syncPlanNotifications(now);
   return { plan: (await repos.plans.findByDate(key))!, warning };
 }

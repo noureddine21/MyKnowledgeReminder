@@ -4,7 +4,15 @@ import { createRepositories } from '../src/database/repositories';
 import type { AppDatabase } from '../src/database/types';
 import { dateKey, organizeDay, parseTaskLine, parseTaskList } from '../src/services/dayPlanner';
 import { handleNotificationEvent } from '../src/services/notificationEvents';
-import { applyPlannerSettings, getTodayPlan, organizeToday, replanRemaining, setPlanTaskDone } from '../src/services/planService';
+import {
+  applyPlannerSettings,
+  getTodayPlan,
+  organizeToday,
+  proposedWindow,
+  replanRemaining,
+  setPlanTaskDone,
+  validateWindow,
+} from '../src/services/planService';
 import { ValidationError } from '../src/utils/errors';
 import { createTestDatabase } from '../test-utils/testDatabase';
 
@@ -15,6 +23,7 @@ const at = (h: number, min = 0, d = 26) => new Date(2026, 10, d, h, min).getTime
 const time = (ts: number | null) => (ts === null ? null : new Date(ts).toTimeString().slice(0, 5));
 const mockedNotifee = notifee as jest.Mocked<typeof notifee>;
 
+const DAY_OFF = { dayStart: '08:00', dayEnd: '22:00', workStart: null, workEnd: null };
 const OPTIONS = { day: at(7), now: at(7), dayStart: '08:00', dayEnd: '22:00', lunchBreak: true };
 
 describe('day planner: reading the list', () => {
@@ -95,7 +104,7 @@ describe('day planner: service (SQLite + notifications)', () => {
   });
 
   it('organizes and stores today, and schedules a notification per future task', async () => {
-    const { plan, warning } = await organizeToday('Sport 1h\nRead 20m', NOW);
+    const { plan, warning } = await organizeToday('Sport 1h\nRead 20m', NOW, DAY_OFF);
     expect(warning).toBeNull();
     expect(plan.planDate).toBe(dateKey(NOW));
     expect(plan.tasks.map(t => [t.title, time(t.startAt)])).toEqual([
@@ -112,7 +121,7 @@ describe('day planner: service (SQLite + notifications)', () => {
   });
 
   it('re-plans only the remaining tasks from now', async () => {
-    const { plan } = await organizeToday('A 1h\nB 1h', NOW);
+    const { plan } = await organizeToday('A 1h\nB 1h', NOW, DAY_OFF);
     await setPlanTaskDone(plan.tasks[0].id, true, NOW);
     const later = at(15, 2);
     const { plan: replanned } = await replanRemaining(later);
@@ -123,7 +132,7 @@ describe('day planner: service (SQLite + notifications)', () => {
   });
 
   it('"Done" from the notification checks the task off', async () => {
-    const { plan } = await organizeToday('A 1h', NOW);
+    const { plan } = await organizeToday('A 1h', NOW, DAY_OFF);
     const id = plan.tasks[0].id;
     await handleNotificationEvent({
       type: 2, // EventType.ACTION_PRESS
@@ -141,5 +150,69 @@ describe('day planner: service (SQLite + notifications)', () => {
     await createRepositories(db).settings.set('planMorningReminder', false);
     await applyPlannerSettings(NOW);
     expect(mockedNotifee.cancelNotification).toHaveBeenCalledWith('plan-morning');
+  });
+});
+
+describe('day planner: work day and day window', () => {
+  it('plans tasks around work hours', () => {
+    const result = organizeDay(parseTaskList('Gym 1h\nShopping 30m\nCook 1h'), {
+      ...OPTIONS,
+      dayStart: '07:00',
+      work: { start: '09:00', end: '17:00' },
+    });
+    expect(result.map(t => [t.title, time(t.startAt)])).toEqual([
+      ['Gym', '07:00'],
+      ['Shopping', '08:05'], // still fits before work
+      ['Cook', '17:00'], // 1 h does not fit before 09:00 -> after work
+    ]);
+  });
+
+  it('proposes work hours on weekdays and a day off on weekends', () => {
+    const settings = {
+      ...require('../src/constants').DEFAULT_SETTINGS,
+      planWorkStart: '10:00',
+      planWorkEnd: '18:00',
+    };
+    expect(proposedWindow(settings, at(9, 0, 26))).toMatchObject({ workStart: '10:00', workEnd: '18:00' }); // Thursday
+    expect(proposedWindow(settings, at(9, 0, 28))).toMatchObject({ workStart: null, workEnd: null }); // Saturday
+  });
+
+  it('validates the window', () => {
+    expect(validateWindow({ dayStart: '08:00', dayEnd: '22:00', workStart: null, workEnd: null })).toEqual({});
+    expect(validateWindow({ dayStart: '22:00', dayEnd: '08:00', workStart: null, workEnd: null })).toHaveProperty('day');
+    expect(validateWindow({ dayStart: '08:00', dayEnd: '22:00', workStart: '17:00', workEnd: '09:00' })).toHaveProperty('work');
+  });
+});
+
+describe('day planner: saving the day window', () => {
+  let db: AppDatabase;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    db = await createTestDatabase();
+    (getDatabase as jest.Mock).mockResolvedValue(db);
+  });
+
+  afterEach(() => db.close());
+
+  it('stores the window, remembers work hours, and keeps them when re-planning', async () => {
+    const window = { dayStart: '07:00', dayEnd: '23:00', workStart: '08:30', workEnd: '16:30' };
+    // 2 h does not fit before work (07:00 -> 09:00 overlaps 08:30) -> after work.
+    const { plan } = await organizeToday('Gym 2h', at(7), window);
+    expect(plan.window).toEqual(window);
+    expect(time(plan.tasks[0].startAt)).toBe('16:30');
+
+    const settings = await createRepositories(db).settings.getAll();
+    expect([settings.planWorkStart, settings.planWorkEnd]).toEqual(['08:30', '16:30']);
+
+    const { plan: replanned } = await replanRemaining(at(7, 30));
+    expect(replanned.window).toEqual(window);
+    expect(time(replanned.tasks[0].startAt)).toBe('16:30');
+  });
+
+  it('rejects an invalid window', async () => {
+    await expect(
+      organizeToday('Gym 1h', at(7), { dayStart: '08:00', dayEnd: '22:00', workStart: '17:00', workEnd: '09:00' }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 });

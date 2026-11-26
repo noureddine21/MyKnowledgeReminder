@@ -1,7 +1,7 @@
 import notifee, { RepeatFrequency } from 'react-native-notify-kit';
 import { getDatabase } from '../src/database/connection';
 import { migration001 } from '../src/database/migrations/001_initial';
-import { getSchemaVersion, runMigrations } from '../src/database/migrations';
+import { getSchemaVersion, MIGRATIONS, runMigrations } from '../src/database/migrations';
 import { createRepositories } from '../src/database/repositories';
 import type { AppDatabase } from '../src/database/types';
 import type { Reminder } from '../src/models';
@@ -134,8 +134,9 @@ describe('migration 002 (repeat interval)', () => {
       "INSERT INTO reminders (information_id, scheduled_at, frequency, created_at, updated_at) VALUES (1, 5, 'weekly', 1, 1)",
     );
 
-    expect(await runMigrations(db)).toBe(3);
-    expect(await getSchemaVersion(db)).toBe(3);
+    const latest = MIGRATIONS[MIGRATIONS.length - 1].version;
+    expect(await runMigrations(db)).toBe(latest);
+    expect(await getSchemaVersion(db)).toBe(latest);
 
     const repos = createRepositories(db);
     expect(await repos.reminders.findByInformationId(1)).toMatchObject({

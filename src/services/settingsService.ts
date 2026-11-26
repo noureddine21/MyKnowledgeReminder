@@ -18,7 +18,14 @@ export async function updateSetting<K extends keyof AppSettings>(
       throw new ValidationError({ reviewIntervals: error });
     }
   }
-  const timeKeys: (keyof AppSettings)[] = ['defaultReminderTime', 'planMorningTime', 'planDayStart', 'planDayEnd'];
+  const timeKeys: (keyof AppSettings)[] = [
+    'defaultReminderTime',
+    'planMorningTime',
+    'planDayStart',
+    'planDayEnd',
+    'planWorkStart',
+    'planWorkEnd',
+  ];
   if (timeKeys.includes(key) && !/^\d{2}:\d{2}$/.test(String(value))) {
     throw new ValidationError({ [key]: 'Invalid time.' });
   }

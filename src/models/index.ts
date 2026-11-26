@@ -110,6 +110,17 @@ export interface AppSettings {
   planLunchBreak: boolean;
   /** Notify when each planned task starts. */
   planTaskNotifications: boolean;
+  /** Last work hours used ("HH:mm"), proposed when planning a work day. */
+  planWorkStart: string;
+  planWorkEnd: string;
+}
+
+/** Time window of a planned day ("HH:mm"); work hours are null on a day off. */
+export interface DayWindow {
+  dayStart: string;
+  dayEnd: string;
+  workStart: string | null;
+  workEnd: string | null;
 }
 
 /** One task of a day plan, as stored. */
@@ -136,6 +147,8 @@ export interface DayPlan {
   rawInput: string;
   tasks: PlanTask[];
   updatedAt: number;
+  /** Window chosen for this day (null for plans saved before it existed). */
+  window: DayWindow | null;
 }
 
 export type SortOption = 'createdDesc' | 'createdAsc' | 'nextReminder';

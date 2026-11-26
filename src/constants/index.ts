@@ -18,6 +18,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   planDayEnd: '22:00',
   planLunchBreak: true,
   planTaskNotifications: true,
+  planWorkStart: '09:00',
+  planWorkEnd: '17:00',
 };
 
 export interface DefaultCategory {

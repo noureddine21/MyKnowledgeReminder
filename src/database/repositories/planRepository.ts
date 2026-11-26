@@ -1,4 +1,4 @@
-import type { DayPlan, PlanTask } from '../../models';
+import type { DayPlan, DayWindow, PlanTask } from '../../models';
 import { withDbError } from '../../utils/errors';
 import { mapPlanTask } from '../mappers';
 import type { SqlExecutor } from '../types';
@@ -29,11 +29,18 @@ export class PlanRepository {
         'SELECT * FROM plan_tasks WHERE plan_date = ? ORDER BY position ASC',
         [planDate],
       );
+      const text = (v: unknown) => (v === null || v === undefined ? null : String(v));
+      const dayStart = text(row.day_start);
+      const dayEnd = text(row.day_end);
       return {
         planDate,
         rawInput: String(row.raw_input),
         updatedAt: Number(row.updated_at),
         tasks: tasks.rows.map(mapPlanTask),
+        window:
+          dayStart && dayEnd
+            ? { dayStart, dayEnd, workStart: text(row.work_start), workEnd: text(row.work_end) }
+            : null,
       };
     });
   }
@@ -46,12 +53,26 @@ export class PlanRepository {
   }
 
   /** Creates or replaces the plan of a day with the given tasks. */
-  replace(planDate: string, rawInput: string, tasks: PlanTaskData[], now: number): Promise<void> {
+  replace(
+    planDate: string,
+    rawInput: string,
+    tasks: PlanTaskData[],
+    now: number,
+    window: DayWindow,
+  ): Promise<void> {
     return withDbError('save the day plan', async () => {
       await this.db.execute(
-        `INSERT INTO day_plans (plan_date, raw_input, created_at, updated_at) VALUES (?, ?, ?, ?)
-         ON CONFLICT(plan_date) DO UPDATE SET raw_input = excluded.raw_input, updated_at = excluded.updated_at`,
-        [planDate, rawInput, now, now],
+        `INSERT INTO day_plans
+           (plan_date, raw_input, day_start, day_end, work_start, work_end, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(plan_date) DO UPDATE SET
+           raw_input = excluded.raw_input,
+           day_start = excluded.day_start,
+           day_end = excluded.day_end,
+           work_start = excluded.work_start,
+           work_end = excluded.work_end,
+           updated_at = excluded.updated_at`,
+        [planDate, rawInput, window.dayStart, window.dayEnd, window.workStart, window.workEnd, now, now],
       );
       await this.db.execute('DELETE FROM plan_tasks WHERE plan_date = ?', [planDate]);
       for (const task of tasks) {

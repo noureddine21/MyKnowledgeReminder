@@ -8,8 +8,8 @@
  *    - "!" at the start or end = important
  * 2. `organizeDay` turns the tasks into a timetable between the day start/end:
  *    fixed tasks keep their time; the others are placed in order (important first),
- *    with 5 min between tasks, a 15 min break after 2 h of work, lunch kept free,
- *    and anything that does not fit is returned unscheduled.
+ *    with 5 min between tasks, a 15 min break after 2 h of work, lunch and work hours
+ *    kept free, and anything that does not fit is returned unscheduled.
  */
 
 export const DEFAULT_TASK_MINUTES = 30;
@@ -45,6 +45,21 @@ export interface DayOptions {
   dayStart: string;
   dayEnd: string;
   lunchBreak: boolean;
+  /** Work hours ("HH:mm") on a work day: tasks are planned around them. */
+  work?: { start: string; end: string } | null;
+}
+
+/** Work block of the day as timestamps, or null (day off / invalid). */
+export function workWindow(
+  day: number,
+  work: { start: string; end: string } | null | undefined,
+): { start: number; end: number } | null {
+  if (!work) {
+    return null;
+  }
+  const start = atTime(day, work.start);
+  const end = atTime(day, work.end);
+  return end > start ? { start, end } : null;
 }
 
 const FIXED_TIME = /(?:@\s*|(?:^|\s)(?:à|at)\s+)(\d{1,2})(?:\s*[:h.]\s*(\d{2})|\s*h)?(?!\d)/i;
@@ -153,6 +168,10 @@ export function organizeDay(tasks: ParsedTask[], options: DayOptions): Organized
 
   if (options.lunchBreak) {
     blocked.push({ ...lunchWindow(options.day), isBreak: true });
+  }
+  const work = workWindow(options.day, options.work);
+  if (work) {
+    blocked.push({ ...work, isBreak: true });
   }
 
   // 1. Fixed-time tasks stay where the user put them.

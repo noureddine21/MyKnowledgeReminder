@@ -2,13 +2,14 @@ import type { AppDatabase } from '../types';
 import { migration001 } from './001_initial';
 import { migration002 } from './002_repeat_interval';
 import { migration003 } from './003_day_planner';
+import { migration004 } from './004_day_window';
 import type { Migration } from './types';
 
 /**
  * Ordered list of migrations. To change the schema, add a new file
  * (e.g. 002_add_x.ts) and append it here. Never edit a released migration.
  */
-export const MIGRATIONS: Migration[] = [migration001, migration002, migration003];
+export const MIGRATIONS: Migration[] = [migration001, migration002, migration003, migration004];
 
 export async function getSchemaVersion(db: AppDatabase): Promise<number> {
   const result = await db.execute('PRAGMA user_version');

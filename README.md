@@ -184,6 +184,9 @@ Call Ahmed 15m
 
 - Duration: `1h`, `1h30`, `1.5h`, `45m`, `45min` (default 30 min). Fixed time: `@14:00`, `@9h30`, `à 14h`, `at 9:30`.
   `!` at the start or end = important (placed first).
+- Before the list, the app asks **"Are you working today?"**: on a work day you set your work hours (proposed
+  Monday–Friday, last hours remembered) and tasks are planned before/after work and in free gaps; on a day off the
+  whole day is free. You can also change the start/end of this day only.
 - Organization (rule-based, offline): fixed-time tasks keep their time; the others follow in order (important
   first) from now until the end of the day, with 5 min between tasks, a 15 min break after 2 h of work and lunch
   (12:30–13:30) kept free. Tasks that do not fit are listed under "Doesn't fit today".
@@ -191,7 +194,8 @@ Call Ahmed 15m
 - Notifications: a daily **morning reminder** (default 07:00) asks for the list, and each task notifies when it
   starts, with a **✓ Done** action.
 - Settings → Day planner: morning reminder on/off and time, day start/end, lunch break, task notifications.
-- Storage: tables `day_plans` and `plan_tasks` (migration 003); plans older than 30 days are deleted.
+- Storage: tables `day_plans` (with the day window and work hours, migration 004) and `plan_tasks` (migration 003);
+  plans older than 30 days are deleted.
 
 ## Share from other apps (Instagram, YouTube, Chrome…)
 
