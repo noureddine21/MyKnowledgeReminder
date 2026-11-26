@@ -10,7 +10,6 @@ export type TabParamList = {
   AddInformation: { shared?: SharedDraft; shareId?: number } | undefined;
   Plan: undefined;
   ReviewToday: undefined;
-  Settings: undefined;
 };
 
 export type RootStackParamList = {
@@ -23,6 +22,7 @@ export type RootStackParamList = {
   Routines: undefined;
   Quiz: { practice?: boolean } | undefined;
   Stats: undefined;
+  Settings: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<

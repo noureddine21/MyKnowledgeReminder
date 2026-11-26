@@ -19,13 +19,13 @@ export interface ColorPalette {
 }
 
 export const lightColors: ColorPalette = {
-  background: '#F5F6FA',
+  background: '#F4F5FB',
   surface: '#FFFFFF',
   surfaceAlt: '#EEF0F6',
   text: '#111827',
   textSecondary: '#4B5563',
   textMuted: '#6B7280',
-  border: '#E5E7EB',
+  border: '#E6E8F0',
   primary: '#4F46E5',
   primaryContrast: '#FFFFFF',
   primarySoft: '#EEF2FF',
@@ -71,6 +71,7 @@ export const radius = {
   sm: 8,
   md: 12,
   lg: 16,
+  xl: 24,
   pill: 999,
 } as const;
 
@@ -96,6 +97,24 @@ export interface AppTheme {
 
 export function createTheme(dark: boolean): AppTheme {
   return { dark, colors: dark ? darkColors : lightColors, spacing, radius, typography };
+}
+
+/**
+ * Soft elevation for cards and floating elements. In dark mode borders do the job
+ * (shadows are invisible on dark backgrounds).
+ */
+export function shadow(dark: boolean, level: 1 | 2 | 3 = 1) {
+  if (dark) {
+    return {};
+  }
+  const config = { 1: [2, 6, 0.06, 2], 2: [4, 12, 0.1, 5], 3: [8, 20, 0.16, 10] }[level];
+  return {
+    shadowColor: '#1E1B4B',
+    shadowOffset: { width: 0, height: config[0] },
+    shadowRadius: config[1],
+    shadowOpacity: config[2],
+    elevation: config[3],
+  };
 }
 
 /** Adds alpha to a #RRGGBB color. */

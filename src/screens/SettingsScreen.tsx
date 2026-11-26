@@ -5,7 +5,7 @@ import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
 import type { AppSettings, ThemeMode } from '../models';
-import type { TabScreenProps } from '../navigation/types';
+import type { RootStackScreenProps } from '../navigation/types';
 import { scheduleDailyItems } from '../services/dailyItemService';
 import { applyPlannerSettings } from '../services/planService';
 import { PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS, PLAN_PRAYER_MINUTES_OPTIONS } from '../constants';
@@ -32,7 +32,7 @@ const THEME_OPTIONS: { value: ThemeMode; label: string; icon: string }[] = [
   { value: 'dark', label: 'Dark', icon: 'weather-night' },
 ];
 
-export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
+export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>) {
   const { colors, spacing } = useAppTheme();
   const { settings, update } = useSettings();
   const handleError = useErrorHandler();

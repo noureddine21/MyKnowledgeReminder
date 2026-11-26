@@ -1,4 +1,4 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createBottomTabNavigator, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import {
   DarkTheme,
   DefaultTheme,
@@ -7,6 +7,7 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from '../components';
 import { BackupScreen } from '../screens/BackupScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
@@ -21,7 +22,7 @@ import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { StatsScreen } from '../screens/StatsScreen';
-import { useAppTheme } from '../theme';
+import { shadow, useAppTheme } from '../theme';
 import { flushPendingNavigation, navigationRef } from './navigationRef';
 import type { RootStackParamList, TabParamList } from './types';
 
@@ -34,11 +35,37 @@ const TAB_ICONS: Record<keyof TabParamList, [string, string]> = {
   AddInformation: ['plus-circle', 'plus-circle-outline'],
   Plan: ['clipboard-text-clock', 'clipboard-text-clock-outline'],
   ReviewToday: ['calendar-check', 'calendar-check-outline'],
-  Settings: ['cog', 'cog-outline'],
 };
 
 function TabIcon({ route, focused, color, size }: { route: keyof TabParamList; focused: boolean; color: string; size: number }) {
   return <Icon name={TAB_ICONS[route][focused ? 0 : 1]} color={color} size={size} />;
+}
+
+/** Raised round "+" button in the middle of the tab bar (Add information). */
+function AddTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) {
+  const { colors, dark } = useAppTheme();
+  const focused = accessibilityState?.selected;
+  return (
+    <View style={styles.addWrap} pointerEvents="box-none">
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel="Add information"
+        style={({ pressed }) => [
+          styles.addButton,
+          {
+            backgroundColor: colors.primary,
+            borderColor: colors.surface,
+            transform: [{ scale: pressed ? 0.94 : 1 }],
+            opacity: focused ? 1 : 0.95,
+          },
+          shadow(dark, 3),
+        ]}
+      >
+        <Icon name="plus" size={30} color={colors.primaryContrast} />
+      </Pressable>
+    </View>
+  );
 }
 
 function Tabs() {
@@ -48,7 +75,14 @@ function Tabs() {
       screenOptions={({ route }) => ({
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border },
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
+          height: 64,
+          paddingTop: 6,
+          paddingBottom: 8,
+        },
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
         headerTintColor: colors.text,
@@ -58,10 +92,13 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={DashboardScreen} options={{ headerShown: false, title: 'Home' }} />
       <Tab.Screen name="Library" component={InformationListScreen} options={{ title: 'My Information' }} />
-      <Tab.Screen name="AddInformation" component={AddInformationScreen} options={{ title: 'Add', headerTitle: 'Add Information' }} />
+      <Tab.Screen
+        name="AddInformation"
+        component={AddInformationScreen}
+        options={{ title: 'Add', headerTitle: 'Add Information', tabBarButton: AddTabButton }}
+      />
       <Tab.Screen name="Plan" component={PlanScreen} options={{ title: 'Plan', headerTitle: 'My Day' }} />
       <Tab.Screen name="ReviewToday" component={ReviewTodayScreen} options={{ title: 'Review', headerTitle: 'Review Today' }} />
-      <Tab.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
     </Tab.Navigator>
   );
 }
@@ -106,7 +143,21 @@ export function RootNavigator() {
         <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
         <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: 'Quiz' }} />
         <Stack.Screen name="Stats" component={StatsScreen} options={{ title: 'Statistics' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  addWrap: { flex: 1, alignItems: 'center' },
+  addButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 4,
+    marginTop: -22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

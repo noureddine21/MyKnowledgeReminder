@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
-import { useAppTheme } from '../theme';
+import { shadow, useAppTheme } from '../theme';
 
 interface Props {
   children: React.ReactNode;
@@ -11,13 +11,14 @@ interface Props {
 }
 
 export function Card({ children, style, onPress, onLongPress, accessibilityLabel }: Props) {
-  const { colors, radius, spacing } = useAppTheme();
+  const { colors, dark, radius, spacing } = useAppTheme();
   const base: ViewStyle = {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: dark ? colors.border : 'transparent',
+    ...shadow(dark, 1),
   };
   if (!onPress && !onLongPress) {
     return <View style={[base, style]}>{children}</View>;

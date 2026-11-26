@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useAppTheme, withAlpha } from '../theme';
+import { shadow, useAppTheme, withAlpha } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export function StatCard({ label, value, icon, color, onPress }: Props) {
-  const { colors, radius, spacing } = useAppTheme();
+  const { colors, dark, radius, spacing } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -24,7 +24,8 @@ export function StatCard({ label, value, icon, color, onPress }: Props) {
         styles.card,
         {
           backgroundColor: colors.surface,
-          borderColor: colors.border,
+          borderColor: dark ? colors.border : 'transparent',
+          ...shadow(dark, 1),
           borderRadius: radius.lg,
           padding: spacing.md,
           opacity: pressed ? 0.85 : 1,
