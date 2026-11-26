@@ -23,6 +23,7 @@ import {
   getTodayPlan,
   editPlanTaskTiming,
   organizeToday,
+  prayersToAvoid,
   proposedWindow,
   replanRemaining,
   setPlanTaskDone,
@@ -36,7 +37,8 @@ const EXAMPLE = 'Sport 1h\n!Finish the report 2h\nMeeting @14:00 1h\nCall Ahmed 
 
 type TimelineItem =
   | { kind: 'task'; task: PlanTask }
-  | { kind: 'lunch' | 'work'; start: number; end: number };
+  | { kind: 'lunch' | 'work'; start: number; end: number }
+  | { kind: 'prayer'; name: string; start: number; end: number };
 
 function buildTimeline(plan: DayPlan, settings: AppSettings, now: number): TimelineItem[] {
   const items: TimelineItem[] = plan.tasks
@@ -56,6 +58,13 @@ function buildTimeline(plan: DayPlan, settings: AppSettings, now: number): Timel
     // During work hours, lunch is part of the work block.
     if (!work || lunchSlot.end <= work.start || lunchSlot.start >= work.end) {
       items.push({ kind: 'lunch', ...lunchSlot });
+    }
+  }
+  const dayStart = applyTimeString(now, plan.window?.dayStart ?? settings.planDayStart);
+  const dayEnd = applyTimeString(now, plan.window?.dayEnd ?? settings.planDayEnd);
+  for (const prayer of prayersToAvoid(settings, now)) {
+    if (prayer.end > dayStart && prayer.start < dayEnd) {
+      items.push({ kind: 'prayer', ...prayer });
     }
   }
   const startOf = (i: TimelineItem) => (i.kind === 'task' ? i.task.startAt! : i.start);
@@ -193,6 +202,9 @@ function describeWindow(window: DayWindow, settings: AppSettings): string[] {
   const extras = [`Day ${window.dayStart}–${window.dayEnd}`];
   if (settings.planLunchBreak) {
     extras.push(`lunch ${settings.planLunchStart}–${settings.planLunchEnd}`);
+  }
+  if (settings.planAvoidPrayers && settings.planPrayerCity) {
+    extras.push('prayer times kept free');
   }
   if (settings.planBreakMinutes > 0) {
     extras.push(`${settings.planBreakMinutes} min break every ${formatDuration(settings.planBreakAfterMinutes)}`);
@@ -414,7 +426,7 @@ export function PlanScreen() {
       {timeline.map(item => {
         if (item.kind !== 'task') {
           return (
-            <View key={item.kind} style={[styles.row, { marginBottom: spacing.sm }]}>
+            <View key={item.kind === 'prayer' ? item.name : item.kind} style={[styles.row, { marginBottom: spacing.sm }]}>
               <View style={styles.timeCol}>
                 <AppText variant="caption" tone="muted">{formatTime(item.start)}</AppText>
                 <AppText variant="caption" tone="muted">{formatTime(item.end)}</AppText>
@@ -426,12 +438,12 @@ export function PlanScreen() {
                 ]}
               >
                 <Icon
-                  name={item.kind === 'work' ? 'briefcase-outline' : 'food-fork-drink'}
+                  name={item.kind === 'work' ? 'briefcase-outline' : item.kind === 'prayer' ? 'mosque' : 'food-fork-drink'}
                   size={18}
-                  color={colors.textMuted}
+                  color={item.kind === 'prayer' ? colors.success : colors.textMuted}
                 />
                 <AppText tone="muted" style={{ marginLeft: spacing.sm }}>
-                  {item.kind === 'work' ? 'Work' : 'Lunch break'}
+                  {item.kind === 'work' ? 'Work' : item.kind === 'prayer' ? item.name : 'Lunch break'}
                 </AppText>
               </View>
             </View>

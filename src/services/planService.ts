@@ -6,6 +6,7 @@ import { getRepositories, inTransaction } from '../database/repositories';
 import type { PlanTaskData } from '../database/repositories/planRepository';
 import type { AppSettings, DayPlan, DayWindow } from '../models';
 import { addDays } from '../utils/date';
+import { findPrayerCity, prayerBlocks, type PrayerBlock } from './prayerTimes';
 import { ValidationError, describeError, logError } from '../utils/errors';
 import {
   MAX_TASK_MINUTES,
@@ -77,8 +78,15 @@ export function validateWindow(window: DayWindow): Record<string, string> {
   return errors;
 }
 
+/** Prayers to keep free on `day`, or [] when the option is off / no city chosen. */
+export function prayersToAvoid(settings: AppSettings, day: number): PrayerBlock[] {
+  const city = settings.planAvoidPrayers ? findPrayerCity(settings.planPrayerCity) : null;
+  return city ? prayerBlocks(city, day, settings.planPrayerMinutes) : [];
+}
+
 function dayOptions(window: DayWindow, settings: AppSettings, now: number) {
   return {
+    busy: prayersToAvoid(settings, now),
     day: now,
     now,
     dayStart: window.dayStart,

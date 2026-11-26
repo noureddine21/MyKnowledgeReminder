@@ -49,6 +49,8 @@ export interface DayOptions {
   /** Break length after `breakAfterMinutes` of continuous tasks (defaults 15 / 120; 0 = none). */
   breakMinutes?: number;
   breakAfterMinutes?: number;
+  /** Other busy moments (e.g. prayers), as timestamps; they also count as breaks. */
+  busy?: { start: number; end: number }[];
   /** Work hours ("HH:mm") on a work day: tasks are planned around them. */
   work?: { start: string; end: string } | null;
 }
@@ -184,6 +186,11 @@ export function organizeDay(tasks: ParsedTask[], options: DayOptions): Organized
   const work = workWindow(options.day, options.work);
   if (work) {
     blocked.push({ ...work, isBreak: true });
+  }
+  for (const slot of options.busy ?? []) {
+    if (slot.end > slot.start) {
+      blocked.push({ start: slot.start, end: slot.end, isBreak: true });
+    }
   }
 
   // 1. Fixed-time tasks stay where the user put them.
