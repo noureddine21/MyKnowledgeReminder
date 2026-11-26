@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">My Knowledge Reminder</string>
     <string name="share_label">Add to My Knowledge Reminder</string>
+    <string name="widget_title">My day</string>
+    <string name="widget_empty">Open the app to plan your day</string>
+    <string name="widget_description">Next tasks of the day and items to review</string>
 </resources>

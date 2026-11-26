@@ -1,16 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Card, Chip, ListRow, Screen, SectionHeader } from '../components';
+import { AppText, Card, Chip, CityPicker, ListRow, Screen, SectionHeader } from '../components';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
 import type { AppSettings, ThemeMode } from '../models';
 import type { TabScreenProps } from '../navigation/types';
 import { applyPlannerSettings } from '../services/planService';
-import { PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS } from '../constants';
+import { PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS, PLAN_PRAYER_MINUTES_OPTIONS } from '../constants';
 import { formatDuration } from '../services/dayPlanner';
+import { findPrayerCity, prayerBlocks } from '../services/prayerTimes';
 import { useAppTheme } from '../theme';
-import { applyTimeString, toTimeString } from '../utils/date';
+import { applyTimeString, formatRelative, formatTime, toTimeString } from '../utils/date';
 import { pickTime } from '../utils/pickers';
 
 /** Monday first; values are JS weekdays (0 = Sunday). */
@@ -35,6 +36,9 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
   const { settings, update } = useSettings();
   const handleError = useErrorHandler();
   const { state, ensurePermission } = useNotificationPermission();
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
+  const prayerCity = findPrayerCity(settings.planPrayerCity);
+  const todayPrayers = prayerCity ? prayerBlocks(prayerCity, Date.now(), settings.planPrayerMinutes) : [];
 
   /** Saves a planner setting, then reschedules the planner notifications. */
   const updatePlanner = async <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
@@ -87,6 +91,17 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
           }
           iconColor={state && !state.granted ? colors.danger : undefined}
           onPress={() => navigation.navigate('ReminderSettings')}
+        />
+        <ListRow
+          icon="cloud-upload-outline"
+          title="Backup & restore"
+          subtitle={
+            settings.lastBackupAt
+              ? `Last backup: ${formatRelative(settings.lastBackupAt, Date.now())}`
+              : 'No backup yet — save one to never lose your data'
+          }
+          iconColor={settings.lastBackupAt ? undefined : colors.warning}
+          onPress={() => navigation.navigate('Backup')}
         />
         <ListRow
           icon="tag-multiple-outline"
@@ -178,6 +193,65 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
         <ListRow icon="briefcase-check-outline" title="Work ends" value={settings.planWorkEnd} onPress={() => editTime('planWorkEnd')} />
       </Card>
 
+      <SectionHeader title="Prayer times" />
+      <Card>
+        <ListRow
+          icon="mosque"
+          title="Don't plan tasks during prayers"
+          subtitle="Times are calculated on the phone for your city"
+          switchValue={settings.planAvoidPrayers}
+          onSwitchChange={value => {
+            updatePlanner('planAvoidPrayers', value);
+            if (value && !settings.planPrayerCity) {
+              setCityPickerOpen(true);
+            }
+          }}
+        />
+        <ListRow
+          icon="map-marker-outline"
+          title="City"
+          value={prayerCity ? prayerCity.name : 'Choose'}
+          onPress={() => setCityPickerOpen(true)}
+        />
+        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.sm, marginBottom: spacing.sm }}>
+          Time kept free from each prayer (Jumu'ah: 1 h)
+        </AppText>
+        <View style={styles.wrap}>
+          {PLAN_PRAYER_MINUTES_OPTIONS.map(minutes => (
+            <Chip
+              key={minutes}
+              label={`${minutes} min`}
+              selected={settings.planPrayerMinutes === minutes}
+              onPress={() => updatePlanner('planPrayerMinutes', minutes)}
+            />
+          ))}
+        </View>
+        {todayPrayers.length > 0 ? (
+          <View style={[styles.prayers, { marginTop: spacing.sm }]}>
+            {todayPrayers.map(prayer => (
+              <View key={prayer.name} style={styles.prayer}>
+                <AppText variant="caption" tone="secondary">
+                  {prayer.name}
+                </AppText>
+                <AppText variant="bodyStrong">{formatTime(prayer.start)}</AppText>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
+          Only used to organize your day — your prayer app keeps handling the adhan.
+        </AppText>
+      </Card>
+      <CityPicker
+        visible={cityPickerOpen}
+        selectedId={settings.planPrayerCity}
+        onClose={() => setCityPickerOpen(false)}
+        onSelect={city => {
+          setCityPickerOpen(false);
+          updatePlanner('planPrayerCity', city.id);
+        }}
+      />
+
       <SectionHeader title="Breaks" />
       <Card>
         <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
@@ -229,4 +303,6 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  prayers: { flexDirection: 'row', justifyContent: 'space-between' },
+  prayer: { alignItems: 'center' },
 });

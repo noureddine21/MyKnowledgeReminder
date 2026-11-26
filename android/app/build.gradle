@@ -123,6 +123,8 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+    // On-device text recognition (Latin scripts) for shared screenshots; no network needed.
+    implementation("com.google.mlkit:text-recognition:16.0.1")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

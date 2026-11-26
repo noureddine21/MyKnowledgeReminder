@@ -28,6 +28,31 @@
             <category android:name="android.intent.category.DEFAULT" />
             <data android:mimeType="text/plain" />
         </intent-filter>
+        <!-- Screenshot shared from another app: text is read on the device (OCR). -->
+        <intent-filter android:label="@string/share_label">
+            <action android:name="android.intent.action.SEND" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="image/*" />
+        </intent-filter>
       </activity>
+
+      <receiver
+        android:name=".MkrWidgetProvider"
+        android:label="@string/widget_title"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+        </intent-filter>
+        <meta-data
+            android:name="android.appwidget.provider"
+            android:resource="@xml/widget_info" />
+      </receiver>
     </application>
+
+    <!-- Android 11+ package visibility: needed to find the speech recognizer. -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
 </manifest>

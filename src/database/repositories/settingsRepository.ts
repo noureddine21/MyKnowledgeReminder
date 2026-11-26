@@ -1,4 +1,9 @@
-import { DEFAULT_SETTINGS, PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS } from '../../constants';
+import {
+  DEFAULT_SETTINGS,
+  PLAN_BREAK_AFTER_OPTIONS,
+  PLAN_BREAK_MINUTES_OPTIONS,
+  PLAN_PRAYER_MINUTES_OPTIONS,
+} from '../../constants';
 import type { AppSettings, ThemeMode } from '../../models';
 import { withDbError } from '../../utils/errors';
 import { validateReviewIntervals } from '../../utils/validation';
@@ -42,7 +47,7 @@ function parseSettings(raw: Record<string, string>): AppSettings {
       settings[key] = raw[key];
     }
   }
-  for (const key of ['planMorningReminder', 'planLunchBreak', 'planTaskNotifications'] as const) {
+  for (const key of ['planMorningReminder', 'planLunchBreak', 'planTaskNotifications', 'planAvoidPrayers'] as const) {
     if (raw[key] !== undefined) {
       settings[key] = raw[key] === 'true';
     }
@@ -60,6 +65,17 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   const breakMinutes = Number(raw.planBreakMinutes);
   if (PLAN_BREAK_MINUTES_OPTIONS.includes(breakMinutes)) {
     settings.planBreakMinutes = breakMinutes;
+  }
+  if (raw.planPrayerCity && /^[a-z]+$/.test(raw.planPrayerCity)) {
+    settings.planPrayerCity = raw.planPrayerCity;
+  }
+  const prayerMinutes = Number(raw.planPrayerMinutes);
+  if (PLAN_PRAYER_MINUTES_OPTIONS.includes(prayerMinutes)) {
+    settings.planPrayerMinutes = prayerMinutes;
+  }
+  const lastBackupAt = Number(raw.lastBackupAt);
+  if (Number.isFinite(lastBackupAt) && lastBackupAt > 0) {
+    settings.lastBackupAt = lastBackupAt;
   }
   const breakAfter = Number(raw.planBreakAfterMinutes);
   if (PLAN_BREAK_AFTER_OPTIONS.includes(breakAfter)) {

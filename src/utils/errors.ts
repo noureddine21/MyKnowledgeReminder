@@ -9,6 +9,8 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'NOTIFICATION'
   | 'PERMISSION'
+  | 'BACKUP'
+  | 'NATIVE'
   | 'UNKNOWN';
 
 export class AppError extends Error {

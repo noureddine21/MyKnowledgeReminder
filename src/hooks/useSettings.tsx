@@ -1,11 +1,13 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { AppSettings } from '../models';
-import { updateSetting } from '../services/settingsService';
+import { getSettings, updateSetting } from '../services/settingsService';
 
 interface SettingsContextValue {
   settings: AppSettings;
   /** Persists a setting in SQLite and updates the in-memory copy. */
   update<K extends keyof AppSettings>(key: K, value: AppSettings[K]): Promise<void>;
+  /** Re-reads every setting from SQLite (e.g. after restoring a backup). */
+  reload(): Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
@@ -27,7 +29,11 @@ export function SettingsProvider({
     [],
   );
 
-  const value = useMemo(() => ({ settings, update }), [settings, update]);
+  const reload = useCallback(async () => {
+    setSettings(await getSettings());
+  }, []);
+
+  const value = useMemo(() => ({ settings, update, reload }), [settings, update, reload]);
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
 

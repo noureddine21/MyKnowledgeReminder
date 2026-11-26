@@ -25,7 +25,13 @@ export const DEFAULT_SETTINGS: AppSettings = {
   planLunchEnd: '13:30',
   planBreakMinutes: 15,
   planBreakAfterMinutes: 120,
+  planAvoidPrayers: false,
+  planPrayerCity: null,
+  planPrayerMinutes: 20,
+  lastBackupAt: null,
 };
+
+export const PLAN_PRAYER_MINUTES_OPTIONS = [10, 15, 20, 30, 45];
 
 /** Choices offered in Settings → Day planner. */
 export const PLAN_BREAK_MINUTES_OPTIONS = [0, 10, 15, 20, 30];

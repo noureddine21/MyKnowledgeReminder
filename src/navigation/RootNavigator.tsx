@@ -8,6 +8,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
 import { Icon } from '../components';
+import { BackupScreen } from '../screens/BackupScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { InformationDetailsScreen } from '../screens/InformationDetailsScreen';
@@ -98,6 +99,7 @@ export function RootNavigator() {
         <Stack.Screen name="EditInformation" component={EditInformationScreen} options={{ title: 'Edit Information' }} />
         <Stack.Screen name="Categories" component={CategoriesScreen} />
         <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: 'Reminder Settings' }} />
+        <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & restore' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

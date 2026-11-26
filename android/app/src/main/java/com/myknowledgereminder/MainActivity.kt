@@ -41,6 +41,17 @@ class MainActivity : ReactActivity() {
    */
   private fun convertShareIntent(intent: Intent?) {
     if (intent == null || intent.action != Intent.ACTION_SEND) return
+    if (intent.type?.startsWith("image/") == true) {
+      val stream = streamUri(intent) ?: return
+      intent.action = Intent.ACTION_VIEW
+      intent.data = Uri.Builder()
+          .scheme("myknowledgereminder")
+          .authority("share")
+          .appendQueryParameter("image", stream.toString())
+          .build()
+      setIntent(intent)
+      return
+    }
     if (intent.type?.startsWith("text/") != true) return
     val text = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.trim()
     if (text.isNullOrEmpty()) return
@@ -57,6 +68,14 @@ class MainActivity : ReactActivity() {
     intent.data = builder.build()
     setIntent(intent)
   }
+
+  @Suppress("DEPRECATION")
+  private fun streamUri(intent: Intent): Uri? =
+      if (android.os.Build.VERSION.SDK_INT >= 33) {
+        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+      } else {
+        intent.getParcelableExtra(Intent.EXTRA_STREAM)
+      }
 
   private companion object {
     const val MAX_SHARED_TEXT = 20000

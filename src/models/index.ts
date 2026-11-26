@@ -120,6 +120,13 @@ export interface AppSettings {
   /** Short break of `planBreakMinutes` after `planBreakAfterMinutes` of continuous tasks (0 = no break). */
   planBreakMinutes: number;
   planBreakAfterMinutes: number;
+  /** Day planner: never plan tasks during prayers (times calculated offline for this city). */
+  planAvoidPrayers: boolean;
+  planPrayerCity: string | null;
+  /** Minutes kept free from each prayer time (Jumu'ah: at least 60). */
+  planPrayerMinutes: number;
+  /** When the last backup file was saved (epoch ms), or null. */
+  lastBackupAt: number | null;
 }
 
 /** Time window of a planned day ("HH:mm"); work hours are null on a day off. */
