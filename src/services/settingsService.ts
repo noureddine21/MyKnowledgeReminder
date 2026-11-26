@@ -27,6 +27,7 @@ export async function updateSetting<K extends keyof AppSettings>(
     'planWorkEnd',
     'planLunchStart',
     'planLunchEnd',
+    'dailyItemTime',
   ];
   if (timeKeys.includes(key) && !/^\d{2}:\d{2}$/.test(String(value))) {
     throw new ValidationError({ [key]: 'Invalid time.' });

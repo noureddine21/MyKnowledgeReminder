@@ -125,6 +125,10 @@ export interface AppSettings {
   planPrayerCity: string | null;
   /** Minutes kept free from each prayer time (Jumu'ah: at least 60). */
   planPrayerMinutes: number;
+  /** "Item of the day" notification: on/off, time ("HH:mm") and which items. */
+  dailyItemEnabled: boolean;
+  dailyItemTime: string;
+  dailyItemSource: 'all' | 'faith';
   /** When the last backup file was saved (epoch ms), or null. */
   lastBackupAt: number | null;
 }

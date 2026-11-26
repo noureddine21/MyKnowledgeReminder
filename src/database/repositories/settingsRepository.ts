@@ -42,12 +42,19 @@ function parseSettings(raw: Record<string, string>): AppSettings {
     'planWorkEnd',
     'planLunchStart',
     'planLunchEnd',
+    'dailyItemTime',
   ] as const) {
     if (raw[key] && /^\d{2}:\d{2}$/.test(raw[key])) {
       settings[key] = raw[key];
     }
   }
-  for (const key of ['planMorningReminder', 'planLunchBreak', 'planTaskNotifications', 'planAvoidPrayers'] as const) {
+  for (const key of [
+    'planMorningReminder',
+    'planLunchBreak',
+    'planTaskNotifications',
+    'planAvoidPrayers',
+    'dailyItemEnabled',
+  ] as const) {
     if (raw[key] !== undefined) {
       settings[key] = raw[key] === 'true';
     }
@@ -72,6 +79,9 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   const prayerMinutes = Number(raw.planPrayerMinutes);
   if (PLAN_PRAYER_MINUTES_OPTIONS.includes(prayerMinutes)) {
     settings.planPrayerMinutes = prayerMinutes;
+  }
+  if (raw.dailyItemSource === 'all' || raw.dailyItemSource === 'faith') {
+    settings.dailyItemSource = raw.dailyItemSource;
   }
   const lastBackupAt = Number(raw.lastBackupAt);
   if (Number.isFinite(lastBackupAt) && lastBackupAt > 0) {

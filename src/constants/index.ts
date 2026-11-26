@@ -28,6 +28,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   planAvoidPrayers: false,
   planPrayerCity: null,
   planPrayerMinutes: 20,
+  dailyItemEnabled: true,
+  dailyItemTime: '08:00',
+  dailyItemSource: 'all',
   lastBackupAt: null,
 };
 

@@ -8,6 +8,7 @@ import type { AppSettings } from './models';
 import { RootNavigator } from './navigation/RootNavigator';
 import { consumeInitialNotification, subscribeToForegroundNotifications } from './services/notificationEvents';
 import { ensureChannel } from './services/notificationService';
+import { scheduleDailyItems } from './services/dailyItemService';
 import { applyPlannerSettings } from './services/planService';
 import { resyncAllNotifications } from './services/reminderSync';
 import { subscribeToSharedContent } from './services/shareIntake';
@@ -47,6 +48,12 @@ async function runStartupTasks(): Promise<void> {
     await resyncAllNotifications();
   } catch (error) {
     logError('startup:resync', error);
+  }
+  try {
+    // Item of the day: next 7 days, refreshed at each start.
+    await scheduleDailyItems();
+  } catch (error) {
+    logError('startup:daily-item', error);
   }
   try {
     // Morning "plan your day" reminder + today's task notifications.
