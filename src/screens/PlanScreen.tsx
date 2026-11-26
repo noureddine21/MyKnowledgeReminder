@@ -32,6 +32,8 @@ import {
   setPlanTaskDone,
 } from '../services/planService';
 import { listRoutines, routinesForDay } from '../services/routineService';
+import { speechToTaskLines } from '../services/voiceInput';
+import { isSpeechAvailable, startSpeech } from '../native/mkrNative';
 import { useAppTheme, withAlpha } from '../theme';
 import { applyTimeString, formatLongToday, formatTime, toTimeString } from '../utils/date';
 import { pickTime } from '../utils/pickers';
@@ -307,6 +309,29 @@ export function PlanScreen() {
   const [carry, setCarry] = useState<CarryOver | null>(null);
   const [todayRoutines, setTodayRoutines] = useState<Routine[]>([]);
   const [timingTask, setTimingTask] = useState<PlanTask | null>(null);
+  const [speechAvailable, setSpeechAvailable] = useState(false);
+  const [listening, setListening] = useState(false);
+
+  useEffect(() => {
+    isSpeechAvailable().then(setSpeechAvailable);
+  }, []);
+
+  const dictate = async () => {
+    setListening(true);
+    try {
+      const text = await startSpeech(null, 'Say your tasks, e.g. "sport one hour, then call Ahmed"');
+      const lines = text ? speechToTaskLines(text) : [];
+      if (lines.length > 0) {
+        setInput(prev => [prev.trim(), ...lines].filter(Boolean).join('\n'));
+        setInputError(undefined);
+      }
+    } catch (e) {
+      logError('plan:voice', e);
+      Alert.alert('Voice input unavailable', describeError(e));
+    } finally {
+      setListening(false);
+    }
+  };
   const [savingTiming, setSavingTiming] = useState(false);
 
   const saveTiming = async (timing: { durationMin: number; fixedStartMin: number | null }) => {
@@ -431,6 +456,17 @@ export function PlanScreen() {
         ) : null}
         <RoutinesToday routines={todayRoutines} onManage={() => navigation.navigate('Routines')} />
         <SyntaxHelp />
+        {speechAvailable ? (
+          <Button
+            title={listening ? 'Listening…' : 'Dictate my tasks'}
+            icon="microphone-outline"
+            variant="secondary"
+            compact
+            loading={listening}
+            onPress={dictate}
+            style={{ alignSelf: 'flex-start', marginBottom: spacing.md }}
+          />
+        ) : null}
         <TextField
           label="Today's to-do list"
           value={input}
