@@ -172,3 +172,18 @@ export interface InformationQuery {
   categoryId?: number | null;
   sort?: SortOption;
 }
+
+/** A task repeated on some weekdays, added automatically to the day plan. */
+export interface Routine {
+  id: number;
+  title: string;
+  durationMin: number;
+  fixedStartMin: number | null;
+  important: boolean;
+  /** Weekdays, 0 = Sunday … 6 = Saturday. */
+  days: number[];
+  isActive: boolean;
+  createdAt: number;
+}
+
+export type RoutineInput = Omit<Routine, 'id' | 'createdAt'>;

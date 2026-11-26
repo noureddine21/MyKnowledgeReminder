@@ -16,6 +16,7 @@ import { AddInformationScreen, EditInformationScreen } from '../screens/Informat
 import { InformationListScreen } from '../screens/InformationListScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { ReminderSettingsScreen } from '../screens/ReminderSettingsScreen';
+import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { useAppTheme } from '../theme';
@@ -100,6 +101,7 @@ export function RootNavigator() {
         <Stack.Screen name="Categories" component={CategoriesScreen} />
         <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: 'Reminder Settings' }} />
         <Stack.Screen name="Backup" component={BackupScreen} options={{ title: 'Backup & restore' }} />
+        <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

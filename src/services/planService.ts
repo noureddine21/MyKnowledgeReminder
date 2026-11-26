@@ -5,8 +5,9 @@
 import { getRepositories, inTransaction } from '../database/repositories';
 import type { PlanTaskData } from '../database/repositories/planRepository';
 import type { AppSettings, DayPlan, DayWindow } from '../models';
-import { addDays } from '../utils/date';
+import { addDays, applyTimeString } from '../utils/date';
 import { findPrayerCity, prayerBlocks, type PrayerBlock } from './prayerTimes';
+import { mergeRoutines, routinesForDay } from './routineService';
 import { ValidationError, describeError, logError } from '../utils/errors';
 import {
   MAX_TASK_MINUTES,
@@ -20,6 +21,7 @@ import {
   cancelNotification,
   cancelPlanTaskNotifications,
   dismissPlanTaskNotification,
+  scheduleEveningSummary,
   planTaskNotificationId,
   scheduleMorningPlanReminder,
   schedulePlanTaskNotification,
@@ -113,6 +115,9 @@ export async function syncPlanNotifications(now: number = Date.now()): Promise<s
         await schedulePlanTaskNotification(task);
       }
     }
+    const remaining = plan?.tasks.filter(t => !t.isDone).length ?? 0;
+    const dayEnd = applyTimeString(now, plan?.window?.dayEnd ?? settings.planDayEnd);
+    await scheduleEveningSummary(remaining, dayEnd, now);
     return null;
   } catch (error) {
     logError('plan:notifications', error);
@@ -142,13 +147,13 @@ export async function organizeToday(
   if (input.length > MAX_PLAN_INPUT_LENGTH) {
     throw new ValidationError({ input: `The list must be at most ${MAX_PLAN_INPUT_LENGTH} characters.` });
   }
-  const tasks = parseTaskList(input);
+  const repos = await getRepositories();
+  const settings = await repos.settings.getAll();
+  const routines = routinesForDay(await repos.routines.findAll(), now);
+  const tasks = mergeRoutines(parseTaskList(input), routines);
   if (tasks.length === 0) {
     throw new ValidationError({ input: 'Write at least one task (one per line).' });
   }
-
-  const repos = await getRepositories();
-  const settings = await repos.settings.getAll();
   const dayWindow = window ?? proposedWindow(settings, now);
   const windowErrors = validateWindow(dayWindow);
   if (Object.keys(windowErrors).length > 0) {
@@ -165,6 +170,38 @@ export async function organizeToday(
   const warning = await syncPlanNotifications(now);
   const plan = await repos.plans.findByDate(key);
   return { plan: plan!, warning };
+}
+
+/** "1h30", "45m": duration written the way the list parser reads it. */
+export function durationToken(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) {
+    return `${m}m`;
+  }
+  return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
+}
+
+export interface CarryOver {
+  fromDate: string;
+  /** Ready-to-paste lines, e.g. "!Finish report 2h". */
+  lines: string[];
+}
+
+/** Unfinished tasks of the most recent previous plan (last 7 days), to propose today. */
+export async function getCarryOver(now: number = Date.now()): Promise<CarryOver | null> {
+  const repos = await getRepositories();
+  for (let back = 1; back <= 7; back++) {
+    const plan = await repos.plans.findByDate(dateKey(addDays(now, -back)));
+    if (!plan) {
+      continue;
+    }
+    const lines = plan.tasks
+      .filter(t => !t.isDone)
+      .map(t => `${t.important ? '!' : ''}${t.title} ${durationToken(t.durationMin)}`);
+    return lines.length > 0 ? { fromDate: plan.planDate, lines } : null;
+  }
+  return null;
 }
 
 /** Re-organizes the tasks that are not done yet, starting from now. */
@@ -234,7 +271,7 @@ export async function editPlanTaskTiming(
   return replanRemaining(now);
 }
 
-/** Checks / unchecks a task and updates its start notification. */
+/** Checks / unchecks a task, then updates the planner notifications (task starts + evening summary). */
 export async function setPlanTaskDone(taskId: number, done: boolean, now: number = Date.now()): Promise<void> {
   const repos = await getRepositories();
   const task = await repos.plans.findTask(taskId);
@@ -245,14 +282,6 @@ export async function setPlanTaskDone(taskId: number, done: boolean, now: number
   if (done) {
     await cancelNotification(planTaskNotificationId(taskId));
     await dismissPlanTaskNotification(taskId);
-    return;
   }
-  const settings = await repos.settings.getAll();
-  if (settings.planTaskNotifications && task.startAt !== null && task.startAt > now) {
-    try {
-      await schedulePlanTaskNotification({ ...task, isDone: false });
-    } catch (error) {
-      logError('plan:task-notification', error);
-    }
-  }
+  await syncPlanNotifications(now);
 }

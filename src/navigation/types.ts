@@ -20,6 +20,7 @@ export type RootStackParamList = {
   Categories: undefined;
   ReminderSettings: undefined;
   Backup: undefined;
+  Routines: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<

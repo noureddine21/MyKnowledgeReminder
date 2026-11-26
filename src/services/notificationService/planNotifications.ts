@@ -12,6 +12,7 @@ import { cancelNotification, createTrigger, getScheduledNotificationIds } from '
 
 export const MORNING_PLAN_NOTIFICATION_ID = 'plan-morning';
 export const PLAN_TASK_DONE_ACTION = 'plan-done';
+export const EVENING_PLAN_NOTIFICATION_ID = 'plan-evening';
 const PLAN_TASK_PREFIX = 'plan-task-';
 
 export function planTaskNotificationId(taskId: number): string {
@@ -94,6 +95,35 @@ export async function schedulePlanTaskNotification(task: PlanTask): Promise<void
       },
     },
     task.startAt,
+    undefined,
+  );
+}
+
+/**
+ * One-off evening summary at the end of the day: "N tasks not done — they will be
+ * proposed tomorrow". Cancelled when everything is done.
+ */
+export async function scheduleEveningSummary(remaining: number, at: number, now: number = Date.now()): Promise<void> {
+  if (remaining <= 0 || at <= now) {
+    await cancelNotification(EVENING_PLAN_NOTIFICATION_ID);
+    return;
+  }
+  await createTrigger(
+    {
+      id: EVENING_PLAN_NOTIFICATION_ID,
+      title: remaining === 1 ? '1 task not done today' : `${remaining} tasks not done today`,
+      body: "No stress: they will be proposed in tomorrow's plan.",
+      data: { screen: 'plan' },
+      android: {
+        channelId: NOTIFICATION_CHANNEL_ID,
+        smallIcon: 'ic_stat_notification',
+        color: '#F59E0B',
+        category: AndroidCategory.REMINDER,
+        pressAction: { id: 'default', launchActivity: 'default' },
+        autoCancel: true,
+      },
+    },
+    at,
     undefined,
   );
 }

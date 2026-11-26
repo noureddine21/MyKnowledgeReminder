@@ -164,6 +164,15 @@ export function SettingsScreen({ navigation }: TabScreenProps<'Settings'>) {
         />
       </Card>
 
+      <Card style={{ paddingVertical: spacing.xs, marginTop: spacing.md }}>
+        <ListRow
+          icon="repeat"
+          title="Routines"
+          subtitle="Tasks added to your plan automatically (sport, Quran…)"
+          onPress={() => navigation.navigate('Routines')}
+        />
+      </Card>
+
       <SectionHeader title="Work schedule" />
       <Card>
         <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>

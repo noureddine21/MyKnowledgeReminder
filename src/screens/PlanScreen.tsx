@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
   AppText,
@@ -16,19 +16,23 @@ import {
 import { useFocusData } from '../hooks/useFocusData';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
-import type { AppSettings, DayPlan, DayWindow, PlanTask } from '../models';
+import { useNavigation } from '@react-navigation/native';
+import type { AppSettings, DayPlan, DayWindow, PlanTask, Routine } from '../models';
 import { formatDuration, lunchWindow, workWindow } from '../services/dayPlanner';
 import {
   MAX_PLAN_INPUT_LENGTH,
   getTodayPlan,
   editPlanTaskTiming,
+  getCarryOver,
+  type CarryOver,
   organizeToday,
   prayersToAvoid,
   proposedWindow,
   replanRemaining,
   setPlanTaskDone,
 } from '../services/planService';
-import { useAppTheme } from '../theme';
+import { listRoutines, routinesForDay } from '../services/routineService';
+import { useAppTheme, withAlpha } from '../theme';
 import { applyTimeString, formatLongToday, formatTime, toTimeString } from '../utils/date';
 import { pickTime } from '../utils/pickers';
 import { ValidationError, describeError, logError } from '../utils/errors';
@@ -182,6 +186,53 @@ function EditTimeButton({ task, onPress }: { task: PlanTask; onPress: () => void
   );
 }
 
+/** "3 unfinished tasks from yesterday" with a one-tap "Add to today". */
+function CarryOverBanner({ carry, onAdd, onDismiss }: { carry: CarryOver; onAdd: () => void; onDismiss: () => void }) {
+  const { colors, radius, spacing } = useAppTheme();
+  return (
+    <View
+      style={[
+        styles.banner,
+        { backgroundColor: withAlpha(colors.warning, 0.12), borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg },
+      ]}
+    >
+      <View style={styles.taskRow}>
+        <Icon name="calendar-arrow-right" size={20} color={colors.warning} />
+        <AppText variant="bodyStrong" style={[styles.flex, { marginLeft: spacing.sm }]}>
+          {carry.lines.length === 1 ? '1 unfinished task' : `${carry.lines.length} unfinished tasks`} from your last plan
+        </AppText>
+      </View>
+      <AppText variant="small" tone="secondary" style={{ marginTop: spacing.xs }} numberOfLines={3}>
+        {carry.lines.join(' · ')}
+      </AppText>
+      <View style={[styles.taskRow, { marginTop: spacing.sm }]}>
+        <Button title="Add to today" icon="plus" compact onPress={onAdd} style={{ marginRight: spacing.sm }} />
+        <Button title="Not now" compact variant="ghost" onPress={onDismiss} />
+      </View>
+    </View>
+  );
+}
+
+/** Today's routines, added automatically to the plan. */
+function RoutinesToday({ routines, onManage }: { routines: Routine[]; onManage: () => void }) {
+  const { colors, spacing } = useAppTheme();
+  return (
+    <View style={[styles.taskRow, { marginBottom: spacing.md }]}>
+      <Icon name="repeat" size={18} color={colors.primary} />
+      <AppText variant="small" tone="secondary" style={[styles.flex, { marginLeft: spacing.sm }]}>
+        {routines.length > 0
+          ? `Added automatically: ${routines.map(r => `${r.title} (${formatDuration(r.durationMin)})`).join(', ')}`
+          : 'No routine today.'}
+      </AppText>
+      <Pressable onPress={onManage} hitSlop={8} accessibilityRole="button">
+        <AppText variant="small" color={colors.primary}>
+          Routines
+        </AppText>
+      </Pressable>
+    </View>
+  );
+}
+
 function SyntaxHelp() {
   const { colors, radius, spacing } = useAppTheme();
   return (
@@ -252,6 +303,9 @@ export function PlanScreen() {
   /** Set when the user changed today's hours (exception); otherwise the settings apply. */
   const [customWindow, setCustomWindow] = useState<DayWindow | null>(null);
   const [windowErrors, setWindowErrors] = useState<Record<string, string>>({});
+  const navigation = useNavigation();
+  const [carry, setCarry] = useState<CarryOver | null>(null);
+  const [todayRoutines, setTodayRoutines] = useState<Routine[]>([]);
   const [timingTask, setTimingTask] = useState<PlanTask | null>(null);
   const [savingTiming, setSavingTiming] = useState(false);
 
@@ -303,6 +357,28 @@ export function PlanScreen() {
     }
   };
 
+  const editorVisible = editing || (!loading && !plan);
+  useEffect(() => {
+    if (!editorVisible) {
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const [carryOver, routines] = await Promise.all([plan ? null : getCarryOver(), listRoutines()]);
+        if (!cancelled) {
+          setCarry(carryOver);
+          setTodayRoutines(routinesForDay(routines, Date.now()));
+        }
+      } catch (e) {
+        logError('plan:extras', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editorVisible, plan]);
+
   const toggle = async (task: PlanTask) => {
     try {
       await setPlanTaskDone(task.id, !task.isDone);
@@ -343,6 +419,17 @@ export function PlanScreen() {
         ) : (
           <TodaySummary window={dayWindow} onChange={() => setCustomWindow(dayWindow)} />
         )}
+        {carry ? (
+          <CarryOverBanner
+            carry={carry}
+            onAdd={() => {
+              setInput(prev => [prev.trim(), ...carry.lines].filter(Boolean).join('\n'));
+              setCarry(null);
+            }}
+            onDismiss={() => setCarry(null)}
+          />
+        ) : null}
+        <RoutinesToday routines={todayRoutines} onManage={() => navigation.navigate('Routines')} />
         <SyntaxHelp />
         <TextField
           label="Today's to-do list"
@@ -541,4 +628,5 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
   timeRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
   timeButton: { borderWidth: 1, minHeight: 40, justifyContent: 'center' },
+  banner: {},
 });

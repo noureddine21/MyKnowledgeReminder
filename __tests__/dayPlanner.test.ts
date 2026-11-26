@@ -118,7 +118,9 @@ describe('day planner: service (SQLite + notifications)', () => {
       ['Sport', '09:00'],
       ['Read', '10:05'],
     ]);
-    const ids = mockedNotifee.createTriggerNotification.mock.calls.map(([n]) => n.id);
+    const ids = mockedNotifee.createTriggerNotification.mock.calls
+      .map(([n]) => n.id)
+      .filter(id => id?.startsWith('plan-task-'));
     expect(ids).toEqual(plan.tasks.filter(t => t.startAt! > NOW).map(t => `plan-task-${t.id}`));
     expect(await getTodayPlan(NOW)).toMatchObject({ rawInput: 'Sport 1h\nRead 20m' });
   });

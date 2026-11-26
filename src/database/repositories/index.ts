@@ -4,6 +4,7 @@ import { CategoryRepository } from './categoryRepository';
 import { InformationRepository } from './informationRepository';
 import { PlanRepository } from './planRepository';
 import { ReminderRepository } from './reminderRepository';
+import { RoutineRepository } from './routineRepository';
 import { ReviewHistoryRepository } from './reviewHistoryRepository';
 import { SettingsRepository } from './settingsRepository';
 
@@ -12,6 +13,7 @@ export interface Repositories {
   information: InformationRepository;
   plans: PlanRepository;
   reminders: ReminderRepository;
+  routines: RoutineRepository;
   reviewHistory: ReviewHistoryRepository;
   settings: SettingsRepository;
 }
@@ -22,6 +24,7 @@ export function createRepositories(executor: SqlExecutor): Repositories {
     information: new InformationRepository(executor),
     plans: new PlanRepository(executor),
     reminders: new ReminderRepository(executor),
+    routines: new RoutineRepository(executor),
     reviewHistory: new ReviewHistoryRepository(executor),
     settings: new SettingsRepository(executor),
   };
@@ -48,6 +51,7 @@ export {
   PlanRepository,
   ReminderRepository,
   ReviewHistoryRepository,
+  RoutineRepository,
   SettingsRepository,
 };
 export type { CategoryWithCount } from './categoryRepository';
