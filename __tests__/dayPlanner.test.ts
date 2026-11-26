@@ -6,6 +6,7 @@ import { dateKey, organizeDay, parseTaskLine, parseTaskList } from '../src/servi
 import { handleNotificationEvent } from '../src/services/notificationEvents';
 import {
   applyPlannerSettings,
+  editPlanTaskTiming,
   getTodayPlan,
   organizeToday,
   proposedWindow,
@@ -245,6 +246,50 @@ describe('day planner: saving the day window', () => {
   it('rejects an invalid window', async () => {
     await expect(
       organizeToday('Gym 1h', at(7), { dayStart: '08:00', dayEnd: '22:00', workStart: '17:00', workEnd: '09:00' }),
+    ).rejects.toBeInstanceOf(ValidationError);
+  });
+});
+
+describe('day planner: editing the time of a task', () => {
+  let db: AppDatabase;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    db = await createTestDatabase();
+    (getDatabase as jest.Mock).mockResolvedValue(db);
+  });
+
+  afterEach(() => db.close());
+
+  it('pins a task to a new time and re-plans the others around it', async () => {
+    const { plan } = await organizeToday('A 1h\nB 1h\nC 30m', at(8), DAY_OFF);
+    expect(plan.tasks.map(t => time(t.startAt))).toEqual(['08:00', '09:05', '10:20']); // 15 min break after 2 h
+
+    const b = plan.tasks[1];
+    const { plan: edited } = await editPlanTaskTiming(b.id, { durationMin: 45, fixedStartMin: 8 * 60 + 30 }, at(8));
+    const byTitle = Object.fromEntries(edited.tasks.map(t => [t.title, [time(t.startAt), t.durationMin]]));
+    expect(byTitle).toEqual({
+      B: ['08:30', 45], // pinned at 08:30 for 45 min
+      A: ['09:20', 60], // 1 h does not fit before 08:25 -> after B (+5 min)
+      C: ['10:25', 30],
+    });
+    expect(edited.tasks.find(t => t.title === 'B')?.fixedStartMin).toBe(8 * 60 + 30);
+  });
+
+  it('unpins a task so the app places it again', async () => {
+    const { plan } = await organizeToday('A 1h @15:00\nB 30m', at(8), DAY_OFF);
+    const a = plan.tasks.find(t => t.title === 'A')!;
+    const { plan: edited } = await editPlanTaskTiming(a.id, { durationMin: 60, fixedStartMin: null }, at(8));
+    expect(edited.tasks.map(t => [t.title, time(t.startAt)])).toEqual([
+      ['A', '08:00'],
+      ['B', '09:05'],
+    ]);
+  });
+
+  it('rejects an invalid duration', async () => {
+    const { plan } = await organizeToday('A 1h', at(8), DAY_OFF);
+    await expect(
+      editPlanTaskTiming(plan.tasks[0].id, { durationMin: 2, fixedStartMin: null }, at(8)),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 });

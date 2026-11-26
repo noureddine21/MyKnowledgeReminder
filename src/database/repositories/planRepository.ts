@@ -103,6 +103,17 @@ export class PlanRepository {
     });
   }
 
+  /** Changes the user-chosen duration and fixed start (null = let the planner place it). */
+  updateTiming(id: number, durationMin: number, fixedStartMin: number | null): Promise<void> {
+    return withDbError('update the task', async () => {
+      await this.db.execute('UPDATE plan_tasks SET duration_min = ?, fixed_start_min = ? WHERE id = ?', [
+        durationMin,
+        fixedStartMin,
+        id,
+      ]);
+    });
+  }
+
   setDone(id: number, done: boolean, now: number): Promise<void> {
     return withDbError('update the task', async () => {
       await this.db.execute('UPDATE plan_tasks SET is_done = ?, done_at = ? WHERE id = ?', [

@@ -190,6 +190,8 @@ Call Ahmed 15m
 - Organization (rule-based, offline): fixed-time tasks keep their time; the others follow in order (important
   first) from now until the end of the day, around work hours and lunch, with 5 min between tasks and a break
   (default 15 min after every 2 h, configurable). Tasks that do not fit are listed under "Doesn't fit today".
+- **⏱ on each task** changes its start time (the task is pinned and the other tasks are re-planned around it) and/or
+  its duration; "Let the app choose" unpins it. Also available for tasks that did not fit.
 - Check tasks off by tapping them; **Re-plan from now** re-organizes what is left; **Edit list** replaces the plan.
 - Notifications: a daily **morning reminder** (default 07:00) asks for the list, and each task notifies when it
   starts, with a **✓ Done** action.

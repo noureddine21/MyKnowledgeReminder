@@ -10,6 +10,7 @@ import {
   LoadingView,
   Screen,
   SectionHeader,
+  TaskTimeEditor,
   TextField,
 } from '../components';
 import { useFocusData } from '../hooks/useFocusData';
@@ -20,6 +21,7 @@ import { formatDuration, lunchWindow, workWindow } from '../services/dayPlanner'
 import {
   MAX_PLAN_INPUT_LENGTH,
   getTodayPlan,
+  editPlanTaskTiming,
   organizeToday,
   proposedWindow,
   replanRemaining,
@@ -155,6 +157,22 @@ function DayWindowEditor({
   );
 }
 
+/** Small "edit time" button shown on each task. */
+function EditTimeButton({ task, onPress }: { task: PlanTask; onPress: () => void }) {
+  const { colors, spacing } = useAppTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={`Edit the time of ${task.title}`}
+      style={{ paddingLeft: spacing.sm }}
+    >
+      <Icon name="clock-edit-outline" size={22} color={colors.primary} />
+    </Pressable>
+  );
+}
+
 function SyntaxHelp() {
   const { colors, radius, spacing } = useAppTheme();
   return (
@@ -222,6 +240,28 @@ export function PlanScreen() {
   /** Set when the user changed today's hours (exception); otherwise the settings apply. */
   const [customWindow, setCustomWindow] = useState<DayWindow | null>(null);
   const [windowErrors, setWindowErrors] = useState<Record<string, string>>({});
+  const [timingTask, setTimingTask] = useState<PlanTask | null>(null);
+  const [savingTiming, setSavingTiming] = useState(false);
+
+  const saveTiming = async (timing: { durationMin: number; fixedStartMin: number | null }) => {
+    if (!timingTask) {
+      return;
+    }
+    setSavingTiming(true);
+    try {
+      const result = await editPlanTaskTiming(timingTask.id, timing);
+      setTimingTask(null);
+      await reload();
+      if (result.warning) {
+        Alert.alert('Notifications not scheduled', result.warning);
+      }
+    } catch (e) {
+      logError('plan:timing', e);
+      Alert.alert('Could not change the time', describeError(e));
+    } finally {
+      setSavingTiming(false);
+    }
+  };
 
   const run = async (action: () => Promise<{ warning: string | null }>) => {
     setBusy(true);
@@ -432,10 +472,11 @@ export function PlanScreen() {
                   </AppText>
                   <AppText variant="caption" tone="secondary">
                     {formatDuration(task.durationMin)}
-                    {task.fixedStartMin !== null ? ' · fixed time' : ''}
+                    {task.fixedStartMin !== null ? ' · 📌 pinned' : ''}
                     {current ? ' · now' : ''}
                   </AppText>
                 </View>
+                {!task.isDone ? <EditTimeButton task={task} onPress={() => setTimingTask(task)} /> : null}
               </View>
             </Card>
           </View>
@@ -452,14 +493,26 @@ export function PlanScreen() {
                 <AppText style={[styles.flex, { marginLeft: spacing.sm }]}>
                   {task.title} ({formatDuration(task.durationMin)})
                 </AppText>
+                <EditTimeButton task={task} onPress={() => setTimingTask(task)} />
               </View>
             ))}
             <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>
-              Remove or shorten some tasks, or set a later end of day in Settings → Day planner.
+              Shorten or pin them with ⏱, remove some tasks, or set a later end of day in Settings.
             </AppText>
           </Card>
         </>
       ) : null}
+
+      <AppText variant="caption" tone="muted" style={{ marginTop: spacing.lg }}>
+        Tap a task to check it off · ⏱ to change its time or duration.
+      </AppText>
+
+      <TaskTimeEditor
+        task={timingTask}
+        saving={savingTiming}
+        onCancel={() => setTimingTask(null)}
+        onSave={saveTiming}
+      />
     </Screen>
   );
 }

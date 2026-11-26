@@ -7,7 +7,14 @@ import type { PlanTaskData } from '../database/repositories/planRepository';
 import type { AppSettings, DayPlan, DayWindow } from '../models';
 import { addDays } from '../utils/date';
 import { ValidationError, describeError, logError } from '../utils/errors';
-import { dateKey, organizeDay, parseTaskList, type ParsedTask } from './dayPlanner';
+import {
+  MAX_TASK_MINUTES,
+  MIN_TASK_MINUTES,
+  dateKey,
+  organizeDay,
+  parseTaskList,
+  type ParsedTask,
+} from './dayPlanner';
 import {
   cancelNotification,
   cancelPlanTaskNotifications,
@@ -186,6 +193,37 @@ export async function replanRemaining(now: number = Date.now()): Promise<PlanRes
   await inTransaction(tx => tx.plans.replace(key, plan.rawInput, data, now, dayWindow));
   const warning = await syncPlanNotifications(now);
   return { plan: (await repos.plans.findByDate(key))!, warning };
+}
+
+export interface TaskTimingInput {
+  durationMin: number;
+  /** Minutes after midnight to pin the task, or null to let the planner place it. */
+  fixedStartMin: number | null;
+}
+
+/**
+ * Edits the time of one task (start time and/or duration), then re-organizes the
+ * remaining tasks of the day around it.
+ */
+export async function editPlanTaskTiming(
+  taskId: number,
+  timing: TaskTimingInput,
+  now: number = Date.now(),
+): Promise<PlanResult> {
+  const { durationMin, fixedStartMin } = timing;
+  if (!Number.isInteger(durationMin) || durationMin < MIN_TASK_MINUTES || durationMin > MAX_TASK_MINUTES) {
+    throw new ValidationError({ duration: `Duration must be between ${MIN_TASK_MINUTES} min and 12 h.` });
+  }
+  if (fixedStartMin !== null && (!Number.isInteger(fixedStartMin) || fixedStartMin < 0 || fixedStartMin > 1439)) {
+    throw new ValidationError({ start: 'Invalid start time.' });
+  }
+  const repos = await getRepositories();
+  const task = await repos.plans.findTask(taskId);
+  if (!task) {
+    throw new ValidationError({ task: 'This task no longer exists.' });
+  }
+  await repos.plans.updateTiming(taskId, durationMin, fixedStartMin);
+  return replanRemaining(now);
 }
 
 /** Checks / unchecks a task and updates its start notification. */
