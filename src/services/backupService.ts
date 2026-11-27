@@ -18,6 +18,8 @@ export const BACKUP_FORMAT = 1;
 export const BACKUP_TABLES = [
   'categories',
   'information',
+  'tags',
+  'information_tags',
   'reminders',
   'review_history',
   'settings',

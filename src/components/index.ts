@@ -16,3 +16,4 @@ export { EmptyState, ErrorView, LoadingView } from './StateViews';
 export { TextField } from './TextField';
 export { TaskTimeEditor, type TaskTiming } from './TaskTimeEditor';
 export { CityPicker } from './CityPicker';
+export { TagPicker, TagPill } from './TagPicker';

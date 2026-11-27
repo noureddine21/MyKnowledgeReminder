@@ -13,6 +13,7 @@ import { NotFoundError } from '../utils/errors';
 import { assertValidInformation } from '../utils/validation';
 import { cancelNotification, notificationIdFor, snoozeNotificationIdFor } from './notificationService';
 import { syncItemNotification } from './reminderSync';
+import { attachTags } from './tagService';
 import { getNextReminderAt, initialSpacedSchedule, isRepeating } from './reviewSchedule';
 
 export interface SaveResult {
@@ -100,6 +101,9 @@ export async function saveInformation(
     } else {
       itemId = await tx.information.insert(input, now);
     }
+    if (input.tagIds !== undefined) {
+      await tx.tags.setForItem(itemId, input.tagIds);
+    }
 
     if (reminderInput.enabled) {
       const data: ReminderData =
@@ -134,7 +138,8 @@ export async function deleteInformation(id: number): Promise<void> {
 
 export async function getInformation(id: number): Promise<InformationItem | null> {
   const repos = await getRepositories();
-  return repos.information.findById(id);
+  const item = await repos.information.findById(id);
+  return item ? (await attachTags([item]))[0] : null;
 }
 
 export async function getReviewHistory(id: number): Promise<ReviewHistoryEntry[]> {
@@ -168,10 +173,13 @@ export async function listInformation(
   now: number = Date.now(),
 ): Promise<InformationItem[]> {
   const repos = await getRepositories();
-  const items = await repos.information.findAll({
-    search: query.search,
-    categoryId: query.categoryId,
-    sort: query.sort,
-  });
+  const items = await attachTags(
+    await repos.information.findAll({
+      search: query.search,
+      categoryId: query.categoryId,
+      tagId: query.tagId,
+      sort: query.sort,
+    }),
+  );
   return query.sort === 'nextReminder' ? sortByNextReminder(items, now) : items;
 }

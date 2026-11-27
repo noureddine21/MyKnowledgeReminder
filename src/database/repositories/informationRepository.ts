@@ -24,6 +24,7 @@ export function escapeLike(value: string): string {
 export interface InformationFilter {
   search?: string;
   categoryId?: number | null;
+  tagId?: number | null;
   /** SQL-level sort; "nextReminder" is applied by the service layer. */
   sort?: SortOption;
   limit?: number;
@@ -48,6 +49,10 @@ export class InformationRepository {
       if (typeof filter.categoryId === 'number') {
         where.push('i.category_id = ?');
         params.push(filter.categoryId);
+      }
+      if (typeof filter.tagId === 'number') {
+        where.push('i.id IN (SELECT information_id FROM information_tags WHERE tag_id = ?)');
+        params.push(filter.tagId);
       }
 
       const order =

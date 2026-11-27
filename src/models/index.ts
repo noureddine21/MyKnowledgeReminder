@@ -70,6 +70,19 @@ export interface ReviewHistoryEntry {
 export interface InformationItem extends Information {
   category: Category | null;
   reminder: Reminder | null;
+  /** Loaded by the service layer (empty when not loaded). */
+  tags?: Tag[];
+}
+
+/** Free tag for finer organization ("#tafsir", "#exam"…); an item can have several. */
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export interface TagWithCount extends Tag {
+  itemCount: number;
 }
 
 /** Fields the user edits in the Add / Edit form. */
@@ -79,6 +92,8 @@ export interface InformationInput {
   categoryId: number | null;
   source: string | null;
   createdAt: number;
+  /** When provided, replaces the item's tags. */
+  tagIds?: number[];
 }
 
 /** Reminder configuration chosen in the form. */
@@ -180,6 +195,7 @@ export type SortOption = 'createdDesc' | 'createdAsc' | 'nextReminder';
 export interface InformationQuery {
   search?: string;
   categoryId?: number | null;
+  tagId?: number | null;
   sort?: SortOption;
 }
 

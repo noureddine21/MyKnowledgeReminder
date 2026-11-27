@@ -10,6 +10,7 @@ import {
   LoadingView,
   ReminderEditor,
   Screen,
+  TagPicker,
   TextField,
 } from '../components';
 import { MAX_CONTENT_LENGTH, MAX_SOURCE_LENGTH, MAX_TITLE_LENGTH } from '../constants';
@@ -30,6 +31,7 @@ interface FormState {
   title: string;
   content: string;
   categoryId: number | null;
+  tagIds: number[];
   source: string;
   createdAt: number;
   reminder: ReminderInput;
@@ -41,6 +43,7 @@ function emptyForm(settings: AppSettings): FormState {
     title: '',
     content: '',
     categoryId: null,
+    tagIds: [],
     source: '',
     createdAt: now,
     reminder: {
@@ -57,6 +60,7 @@ function formFromItem(item: InformationItem, settings: AppSettings): FormState {
     title: item.title,
     content: item.content,
     categoryId: item.categoryId,
+    tagIds: (item.tags ?? []).map(t => t.id),
     source: item.source ?? '',
     createdAt: item.createdAt,
     reminder: item.reminder
@@ -158,6 +162,7 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
           title: form.title,
           content: form.content,
           categoryId: form.categoryId,
+          tagIds: form.tagIds,
           source: form.source.trim() || null,
           createdAt: form.createdAt,
         },
@@ -244,6 +249,11 @@ function InformationForm({ informationId, onSaved, shared, shareId }: Props) {
         ))}
       </View>
       <AppText variant="caption" tone="muted" style={{ marginBottom: spacing.lg }}>{tr('Tap again to unselect. Create your own categories in Settings → Categories.')}</AppText>
+
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Tags')}</AppText>
+      <View style={{ marginBottom: spacing.lg }}>
+        <TagPicker selectedIds={form.tagIds} onChange={ids => update('tagIds', ids)} />
+      </View>
 
       <TextField
         label={tr('Source / reference')}

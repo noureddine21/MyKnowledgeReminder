@@ -478,6 +478,16 @@ export const fr: Record<string, string> = {
   'Shawwal': 'Chawwal',
   "Dhu al-Qi'dah": 'Dhou al-qi’da',
   'Dhu al-Hijjah': 'Dhou al-hijja',
+  // Tags
+  'Tags': 'Étiquettes',
+  'New tag, e.g. tafsir': 'Nouvelle étiquette, ex. tafsir',
+  'New tag': 'Nouvelle étiquette',
+  'Add tag': 'Ajouter l’étiquette',
+  'This tag already exists.': 'Cette étiquette existe déjà.',
+  'Tag name is required.': 'Le nom de l’étiquette est obligatoire.',
+  'A tag must be at most 30 characters.': 'Une étiquette fait au plus 30 caractères.',
+  'Delete the tag #{name}?': 'Supprimer l’étiquette #{name} ?',
+  'The items keep their content; only the tag is removed.': 'Les éléments gardent leur contenu ; seule l’étiquette est retirée.',
   // Notifications
   'Time to review!': 'C’est l’heure de réviser !',
   'Time to review your saved Quran verse: {title}': 'Révisez votre verset enregistré : {title}',

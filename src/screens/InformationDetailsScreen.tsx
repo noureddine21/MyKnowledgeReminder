@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CategoryBadge,
+  TagPill,
   EmptyState,
   ErrorView,
   Icon,
@@ -108,6 +109,13 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
       <AppText variant="title" selectable style={{ marginTop: spacing.sm }}>
         {item.title}
       </AppText>
+      {item.tags && item.tags.length > 0 ? (
+        <View style={[styles.tagRow, { marginTop: spacing.sm }]}>
+          {item.tags.map(tag => (
+            <TagPill key={tag.id} name={tag.name} color={tag.color} />
+          ))}
+        </View>
+      ) : null}
       {item.source ? (
         <View style={[styles.row, { marginTop: spacing.xs }]}>
           <Icon name="link-variant" size={16} color={colors.textMuted} />
@@ -211,6 +219,7 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
 }
 
 const styles = StyleSheet.create({
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap' },
   flex: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center' },
   rowText: { marginLeft: 6, flex: 1 },

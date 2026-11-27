@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import {
   AppText,
   Chip,
+  TagPill,
   EmptyState,
   ErrorView,
   Icon,
@@ -17,6 +18,9 @@ import { listInformation } from '../services/informationService';
 import { useAppTheme } from '../theme';
 
 import { tr, trn } from '../i18n';
+import type { TagWithCount } from '../models';
+import { deleteTag, listTags } from '../services/tagService';
+import { describeError } from '../utils/errors';
 const SORT_OPTIONS: { value: SortOption; label: string; icon: string }[] = [
   { value: 'createdDesc', label: 'Newest', icon: 'sort-calendar-descending' },
   { value: 'createdAsc', label: 'Oldest', icon: 'sort-calendar-ascending' },
@@ -36,6 +40,7 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
   const { colors, radius, spacing, typography } = useAppTheme();
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [tagId, setTagId] = useState<number | null>(null);
   const [sort, setSort] = useState<SortOption>('createdDesc');
   const debouncedSearch = useDebounced(search, 250);
 
@@ -50,15 +55,37 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
 
   const categoriesLoader = useCallback(() => listCategories(), []);
   const { data: categories } = useFocusData(categoriesLoader, 'library:categories');
+  const tagsLoader = useCallback(() => listTags(), []);
+  const { data: tags, reload: reloadTags } = useFocusData(tagsLoader, 'library:tags');
+
+  const confirmDeleteTag = (tag: TagWithCount) =>
+    Alert.alert(tr('Delete the tag #{name}?', { name: tag.name }), tr('The items keep their content; only the tag is removed.'), [
+      { text: tr('Cancel'), style: 'cancel' },
+      {
+        text: tr('Delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteTag(tag.id);
+            if (tagId === tag.id) {
+              setTagId(null);
+            }
+            reloadTags();
+          } catch (e) {
+            Alert.alert(tr('Could not delete'), describeError(e));
+          }
+        },
+      },
+    ]);
 
   const loader = useCallback(async () => {
     const now = Date.now();
-    const items = await listInformation({ search: debouncedSearch, categoryId, sort }, now);
+    const items = await listInformation({ search: debouncedSearch, categoryId, tagId, sort }, now);
     return { now, items };
-  }, [debouncedSearch, categoryId, sort]);
+  }, [debouncedSearch, categoryId, tagId, sort]);
   const { data, loading, error, reload } = useFocusData(loader, 'library');
 
-  const filtersActive = debouncedSearch.trim().length > 0 || categoryId !== null;
+  const filtersActive = debouncedSearch.trim().length > 0 || categoryId !== null || tagId !== null;
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -115,6 +142,25 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
           />
         ))}
       </ScrollView>
+      {tags && tags.length > 0 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg }}
+          style={styles.noGrow}
+        >
+          {tags.map(tag => (
+            <TagPill
+              key={tag.id}
+              name={`${tag.name} · ${tag.itemCount}`}
+              color={tag.color}
+              selected={tagId === tag.id}
+              onPress={() => setTagId(tagId === tag.id ? null : tag.id)}
+              onLongPress={() => confirmDeleteTag(tag)}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

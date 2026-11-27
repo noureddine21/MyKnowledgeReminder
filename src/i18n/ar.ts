@@ -474,6 +474,16 @@ export const ar: Record<string, string> = {
   'Shawwal': 'شوال',
   "Dhu al-Qi'dah": 'ذو القعدة',
   'Dhu al-Hijjah': 'ذو الحجة',
+  // Tags
+  'Tags': 'الوسوم',
+  'New tag, e.g. tafsir': 'وسم جديد، مثل: تفسير',
+  'New tag': 'وسم جديد',
+  'Add tag': 'إضافة الوسم',
+  'This tag already exists.': 'هذا الوسم موجود مسبقًا.',
+  'Tag name is required.': 'اسم الوسم مطلوب.',
+  'A tag must be at most 30 characters.': 'يجب ألا يتجاوز الوسم 30 حرفًا.',
+  'Delete the tag #{name}?': 'حذف الوسم #{name}؟',
+  'The items keep their content; only the tag is removed.': 'تحتفظ العناصر بمحتواها؛ يُحذف الوسم فقط.',
   // Notifications
   'Time to review!': 'حان وقت المراجعة!',
   'Time to review your saved Quran verse: {title}': 'راجع الآية المحفوظة: {title}',
