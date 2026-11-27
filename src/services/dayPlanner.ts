@@ -9,8 +9,8 @@
  *    - "⏰" anywhere = alarm (rings until answered)
  * 2. `organizeDay` turns the tasks into a timetable between the day start/end:
  *    fixed tasks keep their time; the others are placed in order (important first),
- *    with 5 min between tasks, a 15 min break after 2 h of work, lunch and work hours
- *    kept free, and anything that does not fit is returned unscheduled.
+ *    with 5 min between tasks, a 15 min break after 2 h of work, work hours
+ *    (and prayers) kept free, and anything that does not fit is returned unscheduled.
  */
 
 export const DEFAULT_TASK_MINUTES = 30;
@@ -19,8 +19,6 @@ export const MAX_TASK_MINUTES = 720;
 export const GAP_MINUTES = 5;
 export const BREAK_AFTER_MINUTES = 120;
 export const BREAK_MINUTES = 15;
-export const LUNCH_START = '12:30';
-export const LUNCH_END = '13:30';
 
 const MINUTE = 60_000;
 
@@ -47,8 +45,6 @@ export interface DayOptions {
   now: number;
   dayStart: string;
   dayEnd: string;
-  /** Lunch kept free ("HH:mm"), or null. */
-  lunch?: { start: string; end: string } | null;
   /** Break length after `breakAfterMinutes` of continuous tasks (defaults 15 / 120; 0 = none). */
   breakMinutes?: number;
   breakAfterMinutes?: number;
@@ -170,15 +166,6 @@ function ceilTo5Minutes(ts: number): number {
   return Math.ceil(ts / step) * step;
 }
 
-export function lunchWindow(
-  day: number,
-  lunch: { start: string; end: string } = { start: LUNCH_START, end: LUNCH_END },
-): { start: number; end: number } | null {
-  const start = atTime(day, lunch.start);
-  const end = atTime(day, lunch.end);
-  return end > start ? { start, end } : null;
-}
-
 /** Builds the timetable. Tasks keep their fields; unscheduled ones have startAt = null. */
 export function organizeDay(tasks: ParsedTask[], options: DayOptions): OrganizedTask[] {
   const dayStart = atTime(options.day, options.dayStart);
@@ -191,10 +178,6 @@ export function organizeDay(tasks: ParsedTask[], options: DayOptions): Organized
   const result: OrganizedTask[] = [];
   const blocked: { start: number; end: number; isBreak: boolean }[] = [];
 
-  const lunch = options.lunch ? lunchWindow(options.day, options.lunch) : null;
-  if (lunch) {
-    blocked.push({ ...lunch, isBreak: true });
-  }
   const breakMinutes = options.breakMinutes ?? BREAK_MINUTES;
   const breakAfter = options.breakAfterMinutes ?? BREAK_AFTER_MINUTES;
   const work = workWindow(options.day, options.work);

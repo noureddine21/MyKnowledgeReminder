@@ -5,7 +5,6 @@ import {
 } from '../src/services/notificationService/messages';
 import { addMonths, applyTimeString, diffInCalendarDays, formatRelative, toTimeString } from '../src/utils/date';
 import {
-  parseIntervals,
   validateCategoryName,
   validateInformation,
   validateReviewIntervals,
@@ -62,8 +61,6 @@ describe('validation', () => {
     expect(validateReviewIntervals([3, 1])).not.toBeNull();
     expect(validateReviewIntervals([0, 2])).not.toBeNull();
     expect(validateReviewIntervals([1.5])).not.toBeNull();
-    expect(parseIntervals('1, 3 ,7,30')).toEqual([1, 3, 7, 30]);
-    expect(parseIntervals('1, a')).toBeNull();
   });
 
   it('validates category names', () => {

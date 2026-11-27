@@ -23,13 +23,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
   planMorningTime: '07:00',
   planDayStart: '08:00',
   planDayEnd: '22:00',
-  planLunchBreak: true,
   planTaskNotifications: true,
   planWorkDays: [1, 2, 3, 4, 5],
   planWorkStart: '09:00',
   planWorkEnd: '17:00',
-  planLunchStart: '12:30',
-  planLunchEnd: '13:30',
   planBreakMinutes: 15,
   planBreakAfterMinutes: 120,
   planAvoidPrayers: false,
@@ -53,22 +50,6 @@ export const PLAN_BREAK_MINUTES_OPTIONS = [0, 10, 15, 20, 30];
 export const PLAN_BREAK_AFTER_OPTIONS = [60, 90, 120, 180];
 /** How often a small reminder (water, walk...) comes during work hours. */
 export const WORK_NUDGE_EVERY_OPTIONS = [30, 60, 90, 120];
-
-export interface DefaultCategory {
-  name: string;
-  color: string;
-  icon: string;
-}
-
-/** Seeded by the first migration. Names must stay in sync with migration 001. */
-export const DEFAULT_CATEGORIES: DefaultCategory[] = [
-  { name: 'Quran', color: '#0E9F6E', icon: 'book-open-page-variant' },
-  { name: 'Hadith', color: '#B7791F', icon: 'script-text-outline' },
-  { name: 'Technology', color: '#3F83F8', icon: 'laptop' },
-  { name: 'French', color: '#E02424', icon: 'translate' },
-  { name: 'Personal Notes', color: '#9061F9', icon: 'notebook-outline' },
-  { name: 'Other', color: '#6B7280', icon: 'shape-outline' },
-];
 
 export const CATEGORY_COLORS = [
   '#0E9F6E',

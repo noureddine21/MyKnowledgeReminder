@@ -186,7 +186,7 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
   };
 
   const editTime = async (
-    key: 'planMorningTime' | 'planDayStart' | 'planDayEnd' | 'planWorkStart' | 'planWorkEnd' | 'planLunchStart' | 'planLunchEnd',
+    key: 'planMorningTime' | 'planDayStart' | 'planDayEnd' | 'planWorkStart' | 'planWorkEnd',
   ) => {
     const picked = await pickTime(applyTimeString(Date.now(), settings[key]));
     if (picked !== null) {
@@ -302,27 +302,6 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
           onPress={() => editTime('planDayStart')}
         />
         <ListRow icon="clock-end" title={tr('Day ends')} value={settings.planDayEnd} onPress={() => editTime('planDayEnd')} />
-        <ListRow
-          icon="food-fork-drink"
-          title={tr('Keep lunch free')}
-          subtitle={`${settings.planLunchStart}–${settings.planLunchEnd}`}
-          switchValue={settings.planLunchBreak}
-          onSwitchChange={value => updatePlanner('planLunchBreak', value)}
-        />
-        <ListRow
-          icon="clock-outline"
-          title={tr('Lunch starts')}
-          value={settings.planLunchStart}
-          onPress={() => editTime('planLunchStart')}
-          disabled={!settings.planLunchBreak}
-        />
-        <ListRow
-          icon="clock-outline"
-          title={tr('Lunch ends')}
-          value={settings.planLunchEnd}
-          onPress={() => editTime('planLunchEnd')}
-          disabled={!settings.planLunchBreak}
-        />
         <ListRow
           icon="bell-ring-outline"
           title={tr('Notify at each task')}

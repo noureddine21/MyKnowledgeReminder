@@ -28,10 +28,6 @@ export function setLanguage(language: Language): void {
   current = language;
 }
 
-export function getLanguage(): Language {
-  return current;
-}
-
 export function isRTL(language: Language = current): boolean {
   return language === 'ar';
 }

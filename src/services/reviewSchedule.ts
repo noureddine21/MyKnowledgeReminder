@@ -133,11 +133,6 @@ export function isDueToday(reminder: Reminder, now: number): boolean {
   return true;
 }
 
-export function isOverdue(reminder: Reminder, now: number): boolean {
-  const dueAt = getDueAt(reminder, now);
-  return dueAt !== null && dueAt < startOfDay(now) && isDueToday(reminder, now);
-}
-
 /** Next moment a notification is expected, for display and sorting. */
 export function getNextReminderAt(reminder: Reminder, now: number): number | null {
   if (!reminder.isActive) {

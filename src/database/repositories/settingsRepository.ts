@@ -53,8 +53,6 @@ function parseSettings(raw: Record<string, string>): AppSettings {
     'planDayEnd',
     'planWorkStart',
     'planWorkEnd',
-    'planLunchStart',
-    'planLunchEnd',
     'dailyItemTime',
   ] as const) {
     if (raw[key] && /^\d{2}:\d{2}$/.test(raw[key])) {
@@ -63,7 +61,6 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   }
   for (const key of [
     'planMorningReminder',
-    'planLunchBreak',
     'planTaskNotifications',
     'planAvoidPrayers',
     'dailyItemEnabled',

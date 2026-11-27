@@ -135,16 +135,12 @@ export interface AppSettings {
   planDayStart: string;
   planDayEnd: string;
   /** Keep 12:30–13:30 free. */
-  planLunchBreak: boolean;
   /** Notify when each planned task starts. */
   planTaskNotifications: boolean;
   /** Work schedule: days of the week (0 = Sunday … 6 = Saturday) and hours ("HH:mm"). */
   planWorkDays: number[];
   planWorkStart: string;
   planWorkEnd: string;
-  /** Lunch break kept free when `planLunchBreak` is on ("HH:mm"). */
-  planLunchStart: string;
-  planLunchEnd: string;
   /** Short break of `planBreakMinutes` after `planBreakAfterMinutes` of continuous tasks (0 = no break). */
   planBreakMinutes: number;
   planBreakAfterMinutes: number;

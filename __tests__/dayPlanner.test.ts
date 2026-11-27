@@ -30,7 +30,6 @@ const OPTIONS = {
   now: at(7),
   dayStart: '08:00',
   dayEnd: '22:00',
-  lunch: { start: '12:30', end: '13:30' },
 };
 
 describe('day planner: reading the list', () => {
@@ -74,13 +73,13 @@ describe('day planner: organizing the day', () => {
     ]);
   });
 
-  it('keeps lunch free and adds a break after 2 hours of work', () => {
+  it('adds a break after 2 hours of work', () => {
     const result = organizeDay(parseTaskList('A 1h\nB 1h\nC 1h\nD 1h'), { ...OPTIONS, now: at(9) });
     expect(result.map(t => [t.title, time(t.startAt)])).toEqual([
       ['A', '09:00'],
       ['B', '10:05'], // A + B = 2 h -> 15 min break
       ['C', '11:20'],
-      ['D', '13:30'], // would overlap lunch (12:30-13:30)
+      ['D', '12:25'],
     ]);
   });
 
@@ -190,19 +189,12 @@ describe('day planner: work day and day window', () => {
     expect(proposedWindow(custom, at(9, 0, 28)).workStart).toBe('10:00');
   });
 
-  it('applies the configured breaks and lunch hours', () => {
+  it('applies the configured breaks', () => {
     const tasks = parseTaskList('A 1h\nB 1h\nC 30m');
-    const noBreak = organizeDay(tasks, { ...OPTIONS, now: at(8), breakMinutes: 0, lunch: null });
+    const noBreak = organizeDay(tasks, { ...OPTIONS, now: at(8), breakMinutes: 0 });
     expect(noBreak.map(t => time(t.startAt))).toEqual(['08:00', '09:05', '10:10']);
     const hourly = organizeDay(tasks, { ...OPTIONS, now: at(8), breakMinutes: 30, breakAfterMinutes: 60 });
     expect(hourly.map(t => time(t.startAt))).toEqual(['08:00', '09:30', '11:00']);
-    const lateLunch = organizeDay(parseTaskList('A 3h\nB 1h'), {
-      ...OPTIONS,
-      now: at(10),
-      breakMinutes: 0,
-      lunch: { start: '13:00', end: '14:00' },
-    });
-    expect(lateLunch.map(t => time(t.startAt))).toEqual(['10:00', '14:00']);
   });
 
   it('validates the window', () => {

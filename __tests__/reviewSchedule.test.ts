@@ -6,7 +6,6 @@ import {
   getNotificationTimestamp,
   initialSpacedSchedule,
   isDueToday,
-  isOverdue,
   latestOccurrenceOnOrBefore,
   nextOccurrenceAfter,
   spacedReviewDates,
@@ -62,7 +61,6 @@ describe('due today', () => {
   it('one-time reminder due today or overdue', () => {
     expect(isDueToday(reminder({ scheduledAt: at(2026, 1, 10, 20) }), now)).toBe(true);
     expect(isDueToday(reminder({ scheduledAt: at(2026, 1, 8) }), now)).toBe(true);
-    expect(isOverdue(reminder({ scheduledAt: at(2026, 1, 8) }), now)).toBe(true);
     expect(isDueToday(reminder({ scheduledAt: at(2026, 1, 11) }), now)).toBe(false);
     expect(isDueToday(reminder({ scheduledAt: at(2026, 1, 9), isActive: false }), now)).toBe(false);
   });
@@ -71,7 +69,6 @@ describe('due today', () => {
     const daily = reminder({ frequency: 'daily', scheduledAt: at(2026, 1, 1, 20) });
     expect(getDueAt(daily, now)).toBe(at(2026, 1, 10, 20));
     expect(isDueToday(daily, now)).toBe(true);
-    expect(isOverdue(daily, now)).toBe(false);
     // Reviewed this morning, before today's 20:00 occurrence: counts for today.
     expect(isDueToday({ ...daily, lastReviewedAt: at(2026, 1, 10, 8) }, now)).toBe(false);
     // Reviewed yesterday: due again today.
@@ -81,7 +78,6 @@ describe('due today', () => {
   it('weekly reminder not reviewed since its last occurrence is overdue', () => {
     const weekly = reminder({ frequency: 'weekly', scheduledAt: at(2026, 1, 5, 9) });
     expect(isDueToday(weekly, now)).toBe(true);
-    expect(isOverdue(weekly, now)).toBe(true);
     expect(isDueToday({ ...weekly, lastReviewedAt: at(2026, 1, 6) }, now)).toBe(false);
   });
 

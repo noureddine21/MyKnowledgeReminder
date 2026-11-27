@@ -48,16 +48,6 @@ export async function createTag(rawName: string, now: number = Date.now()): Prom
   return { id, name, color };
 }
 
-export async function renameTag(id: number, rawName: string): Promise<void> {
-  const name = normalizeTagName(rawName);
-  const error = validateTagName(name);
-  if (error) {
-    throw new ValidationError({ tag: error });
-  }
-  const repos = await getRepositories();
-  await repos.tags.rename(id, name);
-}
-
 export async function deleteTag(id: number): Promise<void> {
   const repos = await getRepositories();
   await repos.tags.delete(id);

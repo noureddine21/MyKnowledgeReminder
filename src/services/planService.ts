@@ -96,7 +96,6 @@ function dayOptions(window: DayWindow, settings: AppSettings, now: number) {
     now,
     dayStart: window.dayStart,
     dayEnd: window.dayEnd,
-    lunch: settings.planLunchBreak ? { start: settings.planLunchStart, end: settings.planLunchEnd } : null,
     breakMinutes: settings.planBreakMinutes,
     breakAfterMinutes: settings.planBreakAfterMinutes,
     work: window.workStart && window.workEnd ? { start: window.workStart, end: window.workEnd } : null,
@@ -108,12 +107,11 @@ const NUDGE_DAYS = 3;
 
 /** Work-time nudges (water, walk...) for today (today's window if planned) and the next days. */
 export function upcomingWorkNudges(settings: AppSettings, todayWindow: DayWindow | null, now: number): NudgeSlot[] {
-  const lunch = settings.planLunchBreak ? { start: settings.planLunchStart, end: settings.planLunchEnd } : null;
   const slots: NudgeSlot[] = [];
   for (let i = 0; i < NUDGE_DAYS; i++) {
     const day = addDays(now, i);
     const window = i === 0 && todayWindow ? todayWindow : proposedWindow(settings, day);
-    slots.push(...workNudgeSlots(day, window, settings.planWorkNudges, settings.planWorkNudgeEveryMin, lunch, now));
+    slots.push(...workNudgeSlots(day, window, settings.planWorkNudges, settings.planWorkNudgeEveryMin, now));
   }
   return slots;
 }

@@ -61,14 +61,13 @@ export interface NudgeSlot {
 
 /**
  * Nudge times for one day: every `everyMin` after work starts, before work ends,
- * outside the lunch break, cycling through `keys`. Only slots after `now`.
+ * cycling through `keys`. Only slots after `now`.
  */
 export function workNudgeSlots(
   day: number,
   window: Pick<DayWindow, 'workStart' | 'workEnd'>,
   keys: string[],
   everyMin: number,
-  lunch: { start: string; end: string } | null,
   now: number,
 ): NudgeSlot[] {
   const valid = keys.filter(isWorkNudgeKey);
@@ -77,14 +76,9 @@ export function workNudgeSlots(
   }
   const start = applyTimeString(day, window.workStart);
   const end = applyTimeString(day, window.workEnd);
-  const lunchStart = lunch ? applyTimeString(day, lunch.start) : 0;
-  const lunchEnd = lunch ? applyTimeString(day, lunch.end) : 0;
   const slots: NudgeSlot[] = [];
   let index = 0;
   for (let at = start + everyMin * 60_000; at < end - 5 * 60_000; at += everyMin * 60_000) {
-    if (lunch && at >= lunchStart && at < lunchEnd) {
-      continue;
-    }
     const key = valid[index % valid.length];
     index += 1;
     if (at > now) {

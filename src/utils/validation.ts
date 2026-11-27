@@ -98,12 +98,3 @@ export function validateReviewIntervals(intervals: number[]): string | null {
   return null;
 }
 
-/** Parses "1, 3, 7, 30" into numbers. Returns null if any part is not a number. */
-export function parseIntervals(text: string): number[] | null {
-  const parts = text
-    .split(/[,\s]+/)
-    .map(p => p.trim())
-    .filter(Boolean);
-  const numbers = parts.map(Number);
-  return numbers.some(n => Number.isNaN(n)) ? null : numbers;
-}

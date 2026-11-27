@@ -11,7 +11,6 @@ export { ListRow } from './ListRow';
 export { ReminderEditor } from './ReminderEditor';
 export { Screen } from './Screen';
 export { SectionHeader } from './SectionHeader';
-export { StatCard } from './StatCard';
 export { EmptyState, ErrorView, LoadingView } from './StateViews';
 export { TextField } from './TextField';
 export { TaskTimeEditor, type TaskTiming } from './TaskTimeEditor';

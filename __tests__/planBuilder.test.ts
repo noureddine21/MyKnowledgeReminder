@@ -77,11 +77,11 @@ describe('task list built one item at a time', () => {
 describe('work-time nudges', () => {
   const WORK = { workStart: '09:00', workEnd: '13:00' };
 
-  it('cycles the chosen nudges every N minutes during work, skipping lunch and past times', () => {
-    const slots = workNudgeSlots(at(26, 0), WORK, ['water', 'walk'], 60, { start: '11:30', end: '12:30' }, at(26, 10, 30));
-    // 10:00 (water) is past, 12:00 is during lunch.
-    expect(slots.map(s => [time(s.at), s.key])).toEqual([['11:00', 'walk']]);
-    const noLunch = workNudgeSlots(at(26, 0), WORK, ['water', 'walk'], 60, null, 0);
+  it('cycles the chosen nudges every N minutes during work, skipping past times', () => {
+    const slots = workNudgeSlots(at(26, 0), WORK, ['water', 'walk'], 60, at(26, 10, 30));
+    // 10:00 (water) is past.
+    expect(slots.map(s => [time(s.at), s.key])).toEqual([['11:00', 'walk'], ['12:00', 'water']]);
+    const noLunch = workNudgeSlots(at(26, 0), WORK, ['water', 'walk'], 60, 0);
     expect(noLunch.map(s => [time(s.at), s.key])).toEqual([
       ['10:00', 'water'],
       ['11:00', 'walk'],
@@ -94,19 +94,19 @@ describe('work-time nudges', () => {
     expect(key).toBe('custom:Check my posture');
     expect(workNudge(key)).toMatchObject({ label: 'Check my posture', emoji: '🔔' });
     expect(isWorkNudgeKey('custom:')).toBe(false);
-    const slots = workNudgeSlots(at(26, 0), WORK, ['water', key], 60, null, 0);
+    const slots = workNudgeSlots(at(26, 0), WORK, ['water', key], 60, 0);
     expect(slots.map(s => s.key)).toEqual(['water', key, 'water']);
   });
 
   it('nothing on a day off, with no nudge chosen, or with unknown keys', () => {
-    expect(workNudgeSlots(at(26, 0), { workStart: null, workEnd: null }, ['water'], 60, null, 0)).toEqual([]);
-    expect(workNudgeSlots(at(26, 0), WORK, [], 60, null, 0)).toEqual([]);
-    expect(workNudgeSlots(at(26, 0), WORK, ['nope'], 60, null, 0)).toEqual([]);
+    expect(workNudgeSlots(at(26, 0), { workStart: null, workEnd: null }, ['water'], 60, 0)).toEqual([]);
+    expect(workNudgeSlots(at(26, 0), WORK, [], 60, 0)).toEqual([]);
+    expect(workNudgeSlots(at(26, 0), WORK, ['nope'], 60, 0)).toEqual([]);
   });
 
   it('covers today and the next work days from the settings', () => {
     // Thursday 26 → Friday 27 (work) → Saturday 28 (off)
-    const settings = { ...DEFAULT_SETTINGS, planWorkNudges: ['water'], planWorkNudgeEveryMin: 120, planLunchBreak: false };
+    const settings = { ...DEFAULT_SETTINGS, planWorkNudges: ['water'], planWorkNudgeEveryMin: 120 };
     const slots = upcomingWorkNudges(settings, null, at(26, 8));
     expect(slots.map(s => new Date(s.at).getDate() + ' ' + time(s.at))).toEqual([
       '26 11:00',

@@ -18,7 +18,7 @@ import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
 import { useNavigation } from '@react-navigation/native';
 import type { AppSettings, DayPlan, DayWindow, PlanTask, Routine } from '../models';
-import { formatDuration, lunchWindow, parseTaskList, workWindow, type ParsedTask } from '../services/dayPlanner';
+import { formatDuration, parseTaskList, workWindow, type ParsedTask } from '../services/dayPlanner';
 import {
   editableTasks,
   getTodayPlan,
@@ -44,7 +44,7 @@ import { workNudge } from '../services/workNudges';
 
 type TimelineItem =
   | { kind: 'task'; task: PlanTask }
-  | { kind: 'lunch' | 'work'; start: number; end: number }
+  | { kind: 'work'; start: number; end: number }
   | { kind: 'prayer'; name: string; start: number; end: number };
 
 function buildTimeline(plan: DayPlan, settings: AppSettings, now: number): TimelineItem[] {
@@ -57,15 +57,6 @@ function buildTimeline(plan: DayPlan, settings: AppSettings, now: number): Timel
       : null;
   if (work) {
     items.push({ kind: 'work', ...work });
-  }
-  const lunchSlot = settings.planLunchBreak
-    ? lunchWindow(now, { start: settings.planLunchStart, end: settings.planLunchEnd })
-    : null;
-  if (lunchSlot) {
-    // During work hours, lunch is part of the work block.
-    if (!work || lunchSlot.end <= work.start || lunchSlot.start >= work.end) {
-      items.push({ kind: 'lunch', ...lunchSlot });
-    }
   }
   const dayStart = applyTimeString(now, plan.window?.dayStart ?? settings.planDayStart);
   const dayEnd = applyTimeString(now, plan.window?.dayEnd ?? settings.planDayEnd);
@@ -234,9 +225,6 @@ function RoutinesToday({ routines, onManage }: { routines: Routine[]; onManage: 
 function describeWindow(window: DayWindow, settings: AppSettings): string[] {
   const work = window.workStart ? tr('Work {start}–{end}', { start: window.workStart, end: window.workEnd ?? '' }) : tr('Day off');
   const extras = [tr('Day {start}–{end}', { start: window.dayStart, end: window.dayEnd })];
-  if (settings.planLunchBreak) {
-    extras.push(tr('lunch {start}–{end}', { start: settings.planLunchStart, end: settings.planLunchEnd }));
-  }
   if (settings.planAvoidPrayers && settings.planPrayerCity) {
     extras.push(tr('prayer times kept free'));
   }
@@ -415,7 +403,7 @@ export function PlanScreen() {
     return (
       <Screen keyboard>
         <AppText variant="h2">{formatLongToday(now)}</AppText>
-        <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>{tr('Add what you have to do today, one task at a time. The app organizes it around your work, lunch and breaks.')}</AppText>
+        <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>{tr('Add what you have to do today, one task at a time. The app organizes it around your work and breaks.')}</AppText>
         {customWindow ? (
           <DayWindowEditor
             value={customWindow}
@@ -475,7 +463,7 @@ export function PlanScreen() {
             style={{ marginTop: spacing.sm }}
           />
         ) : null}
-        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>{tr('Your work days and hours, lunch and breaks are set once in Settings → Day planner.')}</AppText>
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.md }}>{tr('Your work days and hours and breaks are set once in Settings → Day planner.')}</AppText>
       </Screen>
     );
   }
@@ -536,18 +524,18 @@ export function PlanScreen() {
               </View>
               <View
                 style={[
-                  styles.lunch,
+                  styles.block,
                   { borderColor: colors.border, borderRadius: radius.md, padding: spacing.md },
                 ]}
               >
                 <Icon
-                  name={item.kind === 'work' ? 'briefcase-outline' : item.kind === 'prayer' ? 'mosque' : 'food-fork-drink'}
+                  name={item.kind === 'work' ? 'briefcase-outline' : 'mosque'}
                   size={18}
                   color={item.kind === 'prayer' ? colors.success : colors.textMuted}
                 />
                 <View style={[styles.flex, { marginLeft: spacing.sm }]}>
                   <AppText tone="muted">
-                    {item.kind === 'work' ? tr('Work') : item.kind === 'prayer' ? tr(item.name) : tr('Lunch break')}
+                    {item.kind === 'work' ? tr('Work') : tr(item.name)}
                   </AppText>
                   {item.kind === 'work' && settings.planWorkNudges.length > 0 ? (
                     <AppText variant="caption" color={colors.primary}>
@@ -650,7 +638,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'stretch' },
   timeCol: { width: 52, paddingTop: 12 },
   taskRow: { flexDirection: 'row', alignItems: 'center' },
-  lunch: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderStyle: 'dashed' },
+  block: { flex: 1, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderStyle: 'dashed' },
   done: { textDecorationLine: 'line-through' },
   chips: { flexDirection: 'row', flexWrap: 'wrap' },
   timeRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
