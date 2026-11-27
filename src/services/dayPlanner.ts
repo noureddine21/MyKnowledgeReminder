@@ -91,6 +91,10 @@ export function parseTaskLine(line: string, position: number): ParsedTask | null
   if (text.includes('⏰')) {
     alarm = true;
     text = text.replace(/⏰/g, ' ').trim();
+  } else if (text.includes('🔕')) {
+    // Explicitly no alarm (overrides the default from Settings).
+    alarm = false;
+    text = text.replace(/🔕/g, ' ').trim();
   }
 
   let important = false;
@@ -132,7 +136,7 @@ export function parseTaskLine(line: string, position: number): ParsedTask | null
     fixedStartMin,
     important,
     position,
-    ...(alarm ? { alarm } : {}),
+    ...(alarm !== undefined ? { alarm } : {}),
   };
 }
 

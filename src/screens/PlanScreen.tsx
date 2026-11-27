@@ -10,17 +10,17 @@ import {
   LoadingView,
   Screen,
   SectionHeader,
+  TaskListBuilder,
   TaskTimeEditor,
-  TextField,
 } from '../components';
 import { useFocusData } from '../hooks/useFocusData';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
 import { useNavigation } from '@react-navigation/native';
 import type { AppSettings, DayPlan, DayWindow, PlanTask, Routine } from '../models';
-import { formatDuration, lunchWindow, workWindow } from '../services/dayPlanner';
+import { formatDuration, lunchWindow, parseTaskList, workWindow, type ParsedTask } from '../services/dayPlanner';
 import {
-  MAX_PLAN_INPUT_LENGTH,
+  editableTasks,
   getTodayPlan,
   editPlanTaskTiming,
   getCarryOver,
@@ -40,7 +40,7 @@ import { pickTime } from '../utils/pickers';
 import { ValidationError, describeError, logError } from '../utils/errors';
 
 import { tr, trn } from '../i18n';
-const EXAMPLE = 'Sport 1h\n!Finish the report 2h\nMeeting @14:00 1h\nCall Ahmed 15m\nRead Quran 20m';
+import { workNudge } from '../services/workNudges';
 
 type TimelineItem =
   | { kind: 'task'; task: PlanTask }
@@ -231,21 +231,6 @@ function RoutinesToday({ routines, onManage }: { routines: Routine[]; onManage: 
   );
 }
 
-function SyntaxHelp() {
-  const { colors, radius, spacing } = useAppTheme();
-  return (
-    <View style={[styles.help, { backgroundColor: colors.primarySoft, borderRadius: radius.md, padding: spacing.md }]}>
-      <Icon name="lightbulb-on-outline" size={18} color={colors.primary} />
-      <View style={[styles.flex, { marginLeft: spacing.sm }]}>
-        <AppText variant="small">{tr('One task per line. Optional:')}</AppText>
-        <AppText variant="small">{tr('• duration: 1h, 1h30, 45m (default 30 min)')}</AppText>
-        <AppText variant="small">{tr('• fixed time: @14:00 or "à 14h"')}</AppText>
-        <AppText variant="small">{tr('• important first: start with !')}</AppText>
-      </View>
-    </View>
-  );
-}
-
 function describeWindow(window: DayWindow, settings: AppSettings): string[] {
   const work = window.workStart ? tr('Work {start}–{end}', { start: window.workStart, end: window.workEnd ?? '' }) : tr('Day off');
   const extras = [tr('Day {start}–{end}', { start: window.dayStart, end: window.dayEnd })];
@@ -293,7 +278,14 @@ export function PlanScreen() {
   const { data: plan, loading, error, reload } = useFocusData(loader, 'plan:load');
 
   const [editing, setEditing] = useState(false);
-  const [input, setInput] = useState('');
+  const [tasks, setTasks] = useState<ParsedTask[]>([]);
+  /** Adds list-syntax lines (voice, carry-over) to the tasks, skipping duplicates. */
+  const appendLines = (lines: string[]) =>
+    setTasks(prev => {
+      const known = new Set(prev.map(t => t.title.toLowerCase()));
+      const added = parseTaskList(lines.join('\n')).filter(t => !known.has(t.title.toLowerCase()));
+      return [...prev, ...added].map((t, position) => ({ ...t, position }));
+    });
   const [inputError, setInputError] = useState<string | undefined>();
   const [busy, setBusy] = useState(false);
   /** Set when the user changed today's hours (exception); otherwise the settings apply. */
@@ -316,7 +308,7 @@ export function PlanScreen() {
       const text = await startSpeech(null, tr('Say your tasks, e.g. "sport one hour, then call Ahmed"'));
       const lines = text ? speechToTaskLines(text) : [];
       if (lines.length > 0) {
-        setInput(prev => [prev.trim(), ...lines].filter(Boolean).join('\n'));
+        appendLines(lines);
         setInputError(undefined);
       }
     } catch (e) {
@@ -423,7 +415,7 @@ export function PlanScreen() {
     return (
       <Screen keyboard>
         <AppText variant="h2">{formatLongToday(now)}</AppText>
-        <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>{tr('Write what you have to do today. The app organizes it around your work, lunch and breaks.')}</AppText>
+        <AppText tone="secondary" style={{ marginTop: spacing.xs, marginBottom: spacing.lg }}>{tr('Add what you have to do today, one task at a time. The app organizes it around your work, lunch and breaks.')}</AppText>
         {customWindow ? (
           <DayWindowEditor
             value={customWindow}
@@ -440,14 +432,13 @@ export function PlanScreen() {
           <CarryOverBanner
             carry={carry}
             onAdd={() => {
-              setInput(prev => [prev.trim(), ...carry.lines].filter(Boolean).join('\n'));
+              appendLines(carry.lines);
               setCarry(null);
             }}
             onDismiss={() => setCarry(null)}
           />
         ) : null}
         <RoutinesToday routines={todayRoutines} onManage={() => navigation.navigate('Routines')} />
-        <SyntaxHelp />
         {speechAvailable ? (
           <Button
             title={listening ? tr('Listening…') : tr('Dictate my tasks')}
@@ -459,24 +450,22 @@ export function PlanScreen() {
             style={{ alignSelf: 'flex-start', marginBottom: spacing.md }}
           />
         ) : null}
-        <TextField
-          label={tr('Today\'s to-do list')}
-          value={input}
-          onChangeText={text => {
-            setInput(text);
+        <TaskListBuilder
+          tasks={tasks}
+          onChange={next => {
+            setTasks(next);
             setInputError(undefined);
           }}
-          placeholder={EXAMPLE}
-          multiline
-          maxLength={MAX_PLAN_INPUT_LENGTH}
+          alarmDefault={settings.planAlarmByDefault}
           error={inputError}
-          style={{ minHeight: 200 }}
         />
         <Button
           title={plan ? tr('Re-organize my day') : tr('Organize my day')}
           icon="clipboard-text-clock-outline"
           loading={busy}
-          onPress={() => run(() => organizeToday(input, Date.now(), dayWindow))}
+          disabled={tasks.length === 0 && todayRoutines.length === 0}
+          onPress={() => run(() => organizeToday(tasks, Date.now(), dayWindow))}
+          style={{ marginTop: spacing.md }}
         />
         {plan ? (
           <Button
@@ -520,7 +509,7 @@ export function PlanScreen() {
           variant="secondary"
           compact
           onPress={() => {
-            setInput(plan.rawInput);
+            setTasks(editableTasks(plan));
             const proposed = proposedWindow(settings, Date.now());
             const saved = plan.window;
             const differs =
@@ -556,9 +545,23 @@ export function PlanScreen() {
                   size={18}
                   color={item.kind === 'prayer' ? colors.success : colors.textMuted}
                 />
-                <AppText tone="muted" style={{ marginLeft: spacing.sm }}>
-                  {item.kind === 'work' ? tr('Work') : item.kind === 'prayer' ? tr(item.name) : tr('Lunch break')}
-                </AppText>
+                <View style={[styles.flex, { marginLeft: spacing.sm }]}>
+                  <AppText tone="muted">
+                    {item.kind === 'work' ? tr('Work') : item.kind === 'prayer' ? tr(item.name) : tr('Lunch break')}
+                  </AppText>
+                  {item.kind === 'work' && settings.planWorkNudges.length > 0 ? (
+                    <AppText variant="caption" color={colors.primary}>
+                      {tr('Reminders every {every}: {list}', {
+                        every: formatDuration(settings.planWorkNudgeEveryMin),
+                        list: settings.planWorkNudges
+                          .map(key => workNudge(key))
+                          .filter(n => n !== undefined)
+                          .map(n => `${n.emoji} ${tr(n.label)}`)
+                          .join(' · '),
+                      })}
+                    </AppText>
+                  ) : null}
+                </View>
               </View>
             </View>
           );

@@ -4,7 +4,9 @@ import {
   PLAN_BREAK_MINUTES_OPTIONS,
   PLAN_PRAYER_MINUTES_OPTIONS,
   DAILY_GOAL_OPTIONS,
+  WORK_NUDGE_EVERY_OPTIONS,
 } from '../../constants';
+import { isWorkNudgeKey } from '../../services/workNudges';
 import type { AppSettings, ThemeMode } from '../../models';
 import { withDbError } from '../../utils/errors';
 import { validateReviewIntervals } from '../../utils/validation';
@@ -99,6 +101,20 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   const lastBackupAt = Number(raw.lastBackupAt);
   if (Number.isFinite(lastBackupAt) && lastBackupAt > 0) {
     settings.lastBackupAt = lastBackupAt;
+  }
+  if (raw.planWorkNudges) {
+    try {
+      const keys = JSON.parse(raw.planWorkNudges);
+      if (Array.isArray(keys)) {
+        settings.planWorkNudges = [...new Set(keys.filter(isWorkNudgeKey))];
+      }
+    } catch {
+      // Corrupted value: keep the default.
+    }
+  }
+  const nudgeEvery = Number(raw.planWorkNudgeEveryMin);
+  if (WORK_NUDGE_EVERY_OPTIONS.includes(nudgeEvery)) {
+    settings.planWorkNudgeEveryMin = nudgeEvery;
   }
   const breakAfter = Number(raw.planBreakAfterMinutes);
   if (PLAN_BREAK_AFTER_OPTIONS.includes(breakAfter)) {

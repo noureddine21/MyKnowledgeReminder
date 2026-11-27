@@ -17,3 +17,4 @@ export { TextField } from './TextField';
 export { TaskTimeEditor, type TaskTiming } from './TaskTimeEditor';
 export { CityPicker } from './CityPicker';
 export { TagPicker, TagPill } from './TagPicker';
+export { TaskListBuilder, TASK_SUGGESTIONS } from './TaskListBuilder';

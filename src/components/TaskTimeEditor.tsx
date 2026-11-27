@@ -18,7 +18,7 @@ export interface TaskTiming {
 }
 
 interface Props {
-  task: PlanTask | null;
+  task: Pick<PlanTask, 'title' | 'durationMin' | 'fixedStartMin' | 'alarm' | 'startAt'> | null;
   saving?: boolean;
   onCancel: () => void;
   onSave: (timing: TaskTiming) => void;

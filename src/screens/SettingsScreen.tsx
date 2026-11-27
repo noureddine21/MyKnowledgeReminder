@@ -26,7 +26,9 @@ import {
   PLAN_BREAK_AFTER_OPTIONS,
   PLAN_BREAK_MINUTES_OPTIONS,
   PLAN_PRAYER_MINUTES_OPTIONS,
+  WORK_NUDGE_EVERY_OPTIONS,
 } from '../constants';
+import { WORK_NUDGES } from '../services/workNudges';
 import { formatDuration } from '../services/dayPlanner';
 import { findPrayerCity, prayerBlocks } from '../services/prayerTimes';
 import { useAppTheme } from '../theme';
@@ -201,11 +203,11 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
       <Card style={{ paddingVertical: spacing.xs }}>
         <ListRow
           icon="bell-cog-outline"
-          title={tr('Reminder settings')}
+          title={tr('Notifications & permissions')}
           subtitle={
             state && !state.granted
               ? tr('Notifications are disabled')
-              : tr('Smart schedule: {days} days · {time}', { days: settings.reviewIntervals.join(', '), time: settings.defaultReminderTime })
+              : tr('Default time {time} · battery · reschedule', { time: settings.defaultReminderTime })
           }
           iconColor={state && !state.granted ? colors.danger : undefined}
           onPress={() => navigation.navigate('ReminderSettings')}
@@ -316,6 +318,45 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
         </View>
         <ListRow icon="briefcase-outline" title={tr('Work starts')} value={settings.planWorkStart} onPress={() => editTime('planWorkStart')} />
         <ListRow icon="briefcase-check-outline" title={tr('Work ends')} value={settings.planWorkEnd} onPress={() => editTime('planWorkEnd')} />
+        <AppText variant="bodyStrong" style={{ marginTop: spacing.md }}>{tr('During work')}</AppText>
+        <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
+          {tr('Small reminders while you work, one at a time')}
+        </AppText>
+        <View style={styles.wrap}>
+          {WORK_NUDGES.map(nudge => {
+            const selected = settings.planWorkNudges.includes(nudge.key);
+            return (
+              <Chip
+                key={nudge.key}
+                label={`${nudge.emoji} ${tr(nudge.label)}`}
+                selected={selected}
+                onPress={() =>
+                  updatePlanner(
+                    'planWorkNudges',
+                    selected
+                      ? settings.planWorkNudges.filter(k => k !== nudge.key)
+                      : [...settings.planWorkNudges, nudge.key],
+                  )
+                }
+              />
+            );
+          })}
+        </View>
+        {settings.planWorkNudges.length > 0 ? (
+          <>
+            <AppText variant="caption" tone="secondary" style={{ marginVertical: spacing.sm }}>{tr('Every')}</AppText>
+            <View style={styles.wrap}>
+              {WORK_NUDGE_EVERY_OPTIONS.map(minutes => (
+                <Chip
+                  key={minutes}
+                  label={formatDuration(minutes)}
+                  selected={settings.planWorkNudgeEveryMin === minutes}
+                  onPress={() => updatePlanner('planWorkNudgeEveryMin', minutes)}
+                />
+              ))}
+            </View>
+          </>
+        ) : null}
       </Card>
 
       <SectionHeader title={tr('Prayer times')} />

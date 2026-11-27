@@ -11,6 +11,7 @@ import { logError } from '../../utils/errors';
 import { alarmOptions } from './alarm';
 import { cancelNativeAlarmsWithPrefix, isNativeAvailable, scheduleNativeAlarm } from '../../native/mkrNative';
 import { cancelNotification, createTrigger, getScheduledNotificationIds } from './scheduler';
+import { type NudgeSlot, workNudge } from '../workNudges';
 
 import { tr, trn } from '../../i18n';
 export const MORNING_PLAN_NOTIFICATION_ID = 'plan-morning';
@@ -140,6 +141,43 @@ export async function scheduleEveningSummary(remaining: number, at: number, now:
     at,
     undefined,
   );
+}
+
+const WORK_NUDGE_PREFIX = 'plan-nudge-';
+
+/** Replaces the scheduled work-time nudges (water, walk...) with `slots`. */
+export async function scheduleWorkNudges(slots: NudgeSlot[]): Promise<void> {
+  const ids = await getScheduledNotificationIds();
+  for (const id of ids) {
+    if (id.startsWith(WORK_NUDGE_PREFIX)) {
+      await cancelNotification(id);
+    }
+  }
+  for (const slot of slots) {
+    const nudge = workNudge(slot.key);
+    if (!nudge) {
+      continue;
+    }
+    await createTrigger(
+      {
+        id: `${WORK_NUDGE_PREFIX}${slot.at}`,
+        title: `${nudge.emoji} ${tr(nudge.label)}`,
+        body: tr(nudge.body),
+        data: { screen: 'plan' },
+        android: {
+          channelId: NOTIFICATION_CHANNEL_ID,
+          smallIcon: 'ic_stat_notification',
+          color: '#0B4A3A',
+          category: AndroidCategory.REMINDER,
+          pressAction: { id: 'default', launchActivity: 'default' },
+          autoCancel: true,
+          timeoutAfter: 30 * 60_000,
+        },
+      },
+      slot.at,
+      undefined,
+    );
+  }
 }
 
 /** Cancels every pending task notification of the planner (keeps the morning reminder). */

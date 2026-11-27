@@ -38,6 +38,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dailyItemEnabled: true,
   dailyItemTime: '08:00',
   dailyItemSource: 'all',
+  planWorkNudges: [],
+  planWorkNudgeEveryMin: 60,
   lastBackupAt: null,
 };
 
@@ -48,6 +50,8 @@ export const PLAN_PRAYER_MINUTES_OPTIONS = [10, 15, 20, 30, 45];
 /** Choices offered in Settings → Day planner. */
 export const PLAN_BREAK_MINUTES_OPTIONS = [0, 10, 15, 20, 30];
 export const PLAN_BREAK_AFTER_OPTIONS = [60, 90, 120, 180];
+/** How often a small reminder (water, walk...) comes during work hours. */
+export const WORK_NUDGE_EVERY_OPTIONS = [30, 60, 90, 120];
 
 export interface DefaultCategory {
   name: string;

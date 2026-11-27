@@ -1,16 +1,6 @@
 import React, { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
-import {
-  AppText,
-  Button,
-  Card,
-  DateTimeField,
-  ListRow,
-  Screen,
-  SectionHeader,
-  TextField,
-} from '../components';
-import { DEFAULT_REVIEW_INTERVALS } from '../constants';
+import { Alert } from 'react-native';
+import { AppText, Button, Card, DateTimeField, ListRow, Screen, SectionHeader } from '../components';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
@@ -22,7 +12,6 @@ import {
 import { resyncAllNotifications } from '../services/reminderSync';
 import { useAppTheme } from '../theme';
 import { applyTimeString, toTimeString } from '../utils/date';
-import { parseIntervals, validateReviewIntervals } from '../utils/validation';
 
 import { tr } from '../i18n';
 export function ReminderSettingsScreen() {
@@ -30,26 +19,7 @@ export function ReminderSettingsScreen() {
   const { settings, update } = useSettings();
   const handleError = useErrorHandler();
   const { state, ensurePermission, refresh } = useNotificationPermission();
-  const [intervalsText, setIntervalsText] = useState(settings.reviewIntervals.join(', '));
-  const [intervalsError, setIntervalsError] = useState<string | undefined>();
   const [resyncing, setResyncing] = useState(false);
-
-  const saveIntervals = async (text: string) => {
-    const parsed = parseIntervals(text);
-    const error = parsed ? validateReviewIntervals(parsed) : 'Use numbers separated by commas, e.g. 1, 3, 7, 30.';
-    if (error || !parsed) {
-      setIntervalsError(error ?? undefined);
-      return;
-    }
-    try {
-      await update('reviewIntervals', parsed);
-      setIntervalsText(parsed.join(', '));
-      setIntervalsError(undefined);
-      Alert.alert(tr('Saved'), tr('New items and the next steps of existing smart schedules will use these intervals.'));
-    } catch (e) {
-      handleError(e, 'settings:intervals');
-    }
-  };
 
   const resync = async () => {
     setResyncing(true);
@@ -106,43 +76,6 @@ export function ReminderSettingsScreen() {
       </Card>
       <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Android may still delay notifications in battery saver, Doze mode or on some manufacturers\' devices. Open the app regularly to see everything due in "Review Today".')}</AppText>
 
-      <SectionHeader title={tr('Smart review schedule')} />
-      <Card>
-        <ListRow
-          icon="brain"
-          title={tr('Use smart schedule by default')}
-          subtitle={tr('Pre-select it when adding information. You can always choose another frequency.')}
-          switchValue={settings.useSmartScheduleByDefault}
-          onSwitchChange={value =>
-            update('useSmartScheduleByDefault', value).catch(e => handleError(e, 'settings:smart'))
-          }
-        />
-        <View style={{ marginTop: spacing.md }}>
-          <TextField
-            label={tr('Review intervals (days after creation)')}
-            value={intervalsText}
-            onChangeText={text => {
-              setIntervalsText(text);
-              setIntervalsError(undefined);
-            }}
-            keyboardType="numbers-and-punctuation"
-            placeholder="1, 3, 7, 30"
-            error={intervalsError}
-            hint={tr('Example: 1, 3, 7, 30 → reviews 1, 3, 7 and 30 days after creation.')}
-          />
-          <View style={[styles.row, { gap: spacing.sm }]}>
-            <Button title={tr('Save intervals')} icon="content-save-outline" onPress={() => saveIntervals(intervalsText)} style={styles.flex} compact />
-            <Button
-              title={tr('Reset')}
-              variant="ghost"
-              icon="restore"
-              onPress={() => saveIntervals(DEFAULT_REVIEW_INTERVALS.join(', '))}
-              compact
-            />
-          </View>
-        </View>
-      </Card>
-
       <SectionHeader title={tr('Defaults')} />
       <DateTimeField
         label={tr('Default reminder time')}
@@ -159,8 +92,3 @@ export function ReminderSettingsScreen() {
     </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center' },
-  flex: { flex: 1 },
-});

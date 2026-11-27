@@ -26,7 +26,9 @@ import {
   planTaskNotificationId,
   scheduleMorningPlanReminder,
   schedulePlanTaskNotification,
+  scheduleWorkNudges,
 } from './notificationService';
+import { type NudgeSlot, workNudgeSlots } from './workNudges';
 
 /** Plans older than this many days are deleted. */
 const KEEP_DAYS = 30;
@@ -101,16 +103,40 @@ function dayOptions(window: DayWindow, settings: AppSettings, now: number) {
   };
 }
 
+/** Days ahead covered by the work-time nudges (re-synced at each app start). */
+const NUDGE_DAYS = 3;
+
+/** Work-time nudges (water, walk...) for today (today's window if planned) and the next days. */
+export function upcomingWorkNudges(settings: AppSettings, todayWindow: DayWindow | null, now: number): NudgeSlot[] {
+  const lunch = settings.planLunchBreak ? { start: settings.planLunchStart, end: settings.planLunchEnd } : null;
+  const slots: NudgeSlot[] = [];
+  for (let i = 0; i < NUDGE_DAYS; i++) {
+    const day = addDays(now, i);
+    const window = i === 0 && todayWindow ? todayWindow : proposedWindow(settings, day);
+    slots.push(...workNudgeSlots(day, window, settings.planWorkNudges, settings.planWorkNudgeEveryMin, lunch, now));
+  }
+  return slots;
+}
+
+async function syncWorkNudges(settings: AppSettings, todayWindow: DayWindow | null, now: number): Promise<void> {
+  try {
+    await scheduleWorkNudges(upcomingWorkNudges(settings, todayWindow, now));
+  } catch (error) {
+    logError('plan:nudges', error);
+  }
+}
+
 /** Re-schedules the start notifications of today's remaining tasks. Returns a warning or null. */
 export async function syncPlanNotifications(now: number = Date.now()): Promise<string | null> {
   try {
     const repos = await getRepositories();
     const settings = await repos.settings.getAll();
     await cancelPlanTaskNotifications();
+    const plan = await repos.plans.findByDate(dateKey(now));
+    await syncWorkNudges(settings, plan?.window ?? null, now);
     if (!settings.planTaskNotifications) {
       return null;
     }
-    const plan = await repos.plans.findByDate(dateKey(now));
     for (const task of plan?.tasks ?? []) {
       if (!task.isDone && task.startAt !== null && task.startAt > now) {
         await schedulePlanTaskNotification(task);
@@ -141,18 +167,22 @@ export async function applyPlannerSettings(now: number = Date.now()): Promise<vo
 
 /** Organizes today's to-do list (replacing today's plan) and saves it. */
 export async function organizeToday(
-  rawInput: string,
+  list: string | ParsedTask[],
   now: number = Date.now(),
   window?: DayWindow,
 ): Promise<PlanResult> {
-  const input = rawInput.trim();
+  const input = typeof list === 'string' ? list.trim() : tasksToText(list);
   if (input.length > MAX_PLAN_INPUT_LENGTH) {
     throw new ValidationError({ input: `The list must be at most ${MAX_PLAN_INPUT_LENGTH} characters.` });
   }
+  const parsed =
+    typeof list === 'string'
+      ? parseTaskList(input)
+      : list.filter(t => t.title.trim()).map((t, position) => ({ ...t, title: t.title.trim().slice(0, 150), position }));
   const repos = await getRepositories();
   const settings = await repos.settings.getAll();
   const routines = routinesForDay(await repos.routines.findAll(), now);
-  const tasks = mergeRoutines(parseTaskList(input), routines);
+  const tasks = mergeRoutines(parsed, routines);
   if (tasks.length === 0) {
     throw new ValidationError({ input: 'Write at least one task (one per line).' });
   }
@@ -185,6 +215,47 @@ export function durationToken(minutes: number): string {
     return `${m}m`;
   }
   return m === 0 ? `${h}h` : `${h}h${String(m).padStart(2, '0')}`;
+}
+
+function minutesToHHmm(minutes: number): string {
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
+/** One line per task, in the list syntax ("!Report 2h @14:00 ⏰"): stored as the plan's raw input. */
+export function tasksToText(tasks: ParsedTask[]): string {
+  return tasks
+    .filter(t => t.title.trim())
+    .map(t => {
+      const title = t.title.replace(/[⏰🔕]/gu, ' ').replace(/^[\s!]+|[\s!]+$/g, '').replace(/\s{2,}/g, ' ');
+      const parts = [`${t.important ? '!' : ''}${title}`, durationToken(t.durationMin)];
+      if (t.fixedStartMin !== null) {
+        parts.push(`@${minutesToHHmm(t.fixedStartMin)}`);
+      }
+      if (t.alarm !== undefined) {
+        parts.push(t.alarm ? '⏰' : '🔕');
+      }
+      return parts.join(' ');
+    })
+    .join('\n');
+}
+
+/**
+ * The user's own tasks of a saved plan (routines excluded), with their current
+ * duration / time / alarm, to edit the list again.
+ */
+export function editableTasks(plan: DayPlan): ParsedTask[] {
+  const own = new Set(parseTaskList(plan.rawInput).map(t => t.title.toLowerCase()));
+  return plan.tasks
+    .filter(t => own.has(t.title.toLowerCase()))
+    .sort((a, b) => a.position - b.position)
+    .map((t, position) => ({
+      title: t.title,
+      durationMin: t.durationMin,
+      fixedStartMin: t.fixedStartMin,
+      important: t.important,
+      position,
+      alarm: t.alarm,
+    }));
 }
 
 export interface CarryOver {

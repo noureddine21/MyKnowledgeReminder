@@ -140,7 +140,7 @@ export function RootNavigator() {
         <Stack.Screen name="InformationDetails" component={InformationDetailsScreen} options={{ title: tr('Details') }} />
         <Stack.Screen name="EditInformation" component={EditInformationScreen} options={{ title: tr('Edit Information') }} />
         <Stack.Screen name="Categories" component={CategoriesScreen} />
-        <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: tr('Reminder Settings') }} />
+        <Stack.Screen name="ReminderSettings" component={ReminderSettingsScreen} options={{ title: tr('Notifications & permissions') }} />
         <Stack.Screen name="Backup" component={BackupScreen} options={{ title: tr('Backup & restore') }} />
         <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: tr('Routines') }} />
         <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: tr('Quiz') }} />

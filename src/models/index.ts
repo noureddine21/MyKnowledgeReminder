@@ -157,6 +157,9 @@ export interface AppSettings {
   dailyItemEnabled: boolean;
   dailyItemTime: string;
   dailyItemSource: 'all' | 'faith';
+  /** Small reminders during work hours (keys of WORK_NUDGES: water, walk...), cycled. */
+  planWorkNudges: string[];
+  planWorkNudgeEveryMin: number;
   /** When the last backup file was saved (epoch ms), or null. */
   lastBackupAt: number | null;
 }
