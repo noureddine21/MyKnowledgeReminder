@@ -46,6 +46,7 @@ export function mapReminder(row: SqlRow, prefix = ''): Reminder {
     scheduledAt: num(row[`${prefix}scheduled_at`]),
     frequency: str(row[`${prefix}frequency`]) as ReminderFrequency,
     repeatInterval: num(row[`${prefix}repeat_interval`] ?? 1) || 1,
+    alarm: bool(row[`${prefix}alarm`]),
     isActive: bool(row[`${prefix}is_active`]),
     notificationId: strOrNull(row[`${prefix}notification_id`]),
     spacedStep: num(row[`${prefix}spaced_step`] ?? 0),
@@ -87,5 +88,6 @@ export function mapPlanTask(row: SqlRow): PlanTask {
     endAt: numOrNull(row.end_at),
     isDone: bool(row.is_done),
     doneAt: numOrNull(row.done_at),
+    alarm: bool(row.alarm),
   };
 }

@@ -21,6 +21,7 @@ function reminder(patch: Partial<Reminder>): Reminder {
     scheduledAt: at(2026, 1, 10),
     frequency: 'once',
     repeatInterval: 1,
+    alarm: false,
     isActive: true,
     notificationId: null,
     spacedStep: 0,

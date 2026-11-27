@@ -12,6 +12,9 @@ interface MkrNativeSpec {
   startSpeech(language: string | null, prompt: string | null): Promise<string | null>;
   recognizeText(uri: string): Promise<string>;
   updateWidget(snapshotJson: string): Promise<number>;
+  setShowWhenLocked(enabled: boolean): Promise<boolean>;
+  canUseFullScreenIntent(): Promise<boolean>;
+  openFullScreenIntentSettings(): Promise<boolean>;
 }
 
 function module(): MkrNativeSpec {
@@ -56,4 +59,25 @@ export function recognizeText(uri: string) {
 
 export function updateWidget(snapshot: object) {
   return module().updateWidget(JSON.stringify(snapshot));
+}
+
+/** Shows the current screen over the lock screen (Alarm screen only). Never throws. */
+export async function setShowWhenLocked(enabled: boolean): Promise<void> {
+  try {
+    await module().setShowWhenLocked(enabled);
+  } catch {
+    // Not available (tests, iOS).
+  }
+}
+
+export async function canUseFullScreenIntent(): Promise<boolean> {
+  try {
+    return await module().canUseFullScreenIntent();
+  } catch {
+    return true;
+  }
+}
+
+export function openFullScreenIntentSettings() {
+  return module().openFullScreenIntentSettings();
 }

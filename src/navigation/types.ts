@@ -23,6 +23,8 @@ export type RootStackParamList = {
   Quiz: { practice?: boolean } | undefined;
   Stats: undefined;
   Settings: undefined;
+  /** Full-screen alarm for a review item or a day-plan task. */
+  Alarm: { informationId?: number; planTaskId?: number; notificationId?: string };
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> = NativeStackScreenProps<

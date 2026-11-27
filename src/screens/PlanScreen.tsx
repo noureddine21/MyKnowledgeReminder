@@ -328,7 +328,7 @@ export function PlanScreen() {
   };
   const [savingTiming, setSavingTiming] = useState(false);
 
-  const saveTiming = async (timing: { durationMin: number; fixedStartMin: number | null }) => {
+  const saveTiming = async (timing: { durationMin: number; fixedStartMin: number | null; alarm: boolean }) => {
     if (!timingTask) {
       return;
     }
@@ -599,6 +599,7 @@ export function PlanScreen() {
                   <AppText variant="caption" tone="secondary">
                     {formatDuration(task.durationMin)}
                     {task.fixedStartMin !== null ? tr(' · 📌 pinned') : ''}
+                    {task.alarm ? ' · ⏰' : ''}
                     {current ? tr(' · now') : ''}
                   </AppText>
                 </View>

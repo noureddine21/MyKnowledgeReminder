@@ -33,6 +33,11 @@ export function openSharedDraft(shared: SharedDraft): void {
   );
 }
 
+/** Opens the full-screen Alarm screen (from an alarm notification). */
+export function openAlarm(params: { informationId?: number; planTaskId?: number; notificationId?: string }): void {
+  navigateWhenReady(() => navigationRef.navigate('Alarm', params));
+}
+
 /** Opens the day planner tab. */
 export function openPlan(): void {
   navigateWhenReady(() => navigationRef.navigate('Tabs', { screen: 'Plan' }));

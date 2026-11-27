@@ -8,6 +8,7 @@ import { NOTIFICATION_CHANNEL_ID } from '../../constants';
 import type { PlanTask } from '../../models';
 import { formatTime } from '../../utils/date';
 import { logError } from '../../utils/errors';
+import { alarmOptions } from './alarm';
 import { cancelNotification, createTrigger, getScheduledNotificationIds } from './scheduler';
 
 import { tr, trn } from '../../i18n';
@@ -93,6 +94,7 @@ export async function schedulePlanTaskNotification(task: PlanTask): Promise<void
         pressAction: { id: 'default', launchActivity: 'default' },
         actions: [{ title: tr('✓ Done'), pressAction: { id: PLAN_TASK_DONE_ACTION } }],
         autoCancel: true,
+        ...(task.alarm ? alarmOptions() : {}),
       },
     },
     task.startAt,

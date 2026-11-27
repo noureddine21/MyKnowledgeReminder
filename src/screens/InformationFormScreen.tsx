@@ -49,6 +49,7 @@ function emptyForm(settings: AppSettings): FormState {
     reminder: {
       enabled: true,
       frequency: settings.useSmartScheduleByDefault ? 'spaced' : 'once',
+      alarm: settings.alarmByDefault,
       scheduledAt: applyTimeString(addDays(now, 1), settings.defaultReminderTime),
     },
   };
@@ -68,6 +69,7 @@ function formFromItem(item: InformationItem, settings: AppSettings): FormState {
           enabled: item.reminder.isActive,
           frequency: item.reminder.frequency,
           repeatInterval: item.reminder.repeatInterval,
+          alarm: item.reminder.alarm,
           scheduledAt: item.reminder.isActive ? item.reminder.scheduledAt : base.reminder.scheduledAt,
         }
       : { ...base.reminder, enabled: false },

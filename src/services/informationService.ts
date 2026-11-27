@@ -59,6 +59,7 @@ export function buildReminderData(
         isActive: true,
         spacedStep: schedule.step,
         spacedBaseAt: createdAt,
+        alarm: input.alarm ?? false,
       };
     }
   }
@@ -69,6 +70,7 @@ export function buildReminderData(
     isActive: true,
     spacedStep: 0,
     spacedBaseAt: null,
+    alarm: input.alarm ?? false,
   };
 }
 
@@ -115,6 +117,7 @@ export async function saveInformation(
               isActive: true,
               spacedStep: existing.reminder.spacedStep,
               spacedBaseAt: existing.reminder.spacedBaseAt,
+              alarm: reminderInput.alarm ?? existing.reminder.alarm,
             }
           : buildReminderData(reminderInput, input.createdAt, settings.reviewIntervals, now);
       await tx.reminders.upsert(itemId, data, now);

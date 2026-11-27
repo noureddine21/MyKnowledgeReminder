@@ -23,6 +23,7 @@ export function toScheduleTarget(item: InformationItem): Omit<ScheduleTarget, 'r
     source: item.source,
     categoryName: item.category?.name ?? null,
     categoryColor: item.category?.color ?? null,
+    alarm: item.reminder?.alarm ?? false,
   };
 }
 

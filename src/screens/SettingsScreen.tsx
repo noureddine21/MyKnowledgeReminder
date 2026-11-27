@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
 import { AppText, Card, Chip, CityPicker, ListRow, Screen, SectionHeader, TextField } from '../components';
 import { useErrorHandler } from '../hooks/useErrorHandler';
@@ -8,6 +9,7 @@ import type { AppSettings, ThemeMode } from '../models';
 import type { RootStackScreenProps } from '../navigation/types';
 import { scheduleDailyItems } from '../services/dailyItemService';
 import { applyLanguage } from '../i18n/apply';
+import { canUseFullScreenIntent, openFullScreenIntentSettings } from '../native/mkrNative';
 import { applyPlannerSettings } from '../services/planService';
 import {
   DAILY_GOAL_OPTIONS,
@@ -53,6 +55,12 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
   const { state, ensurePermission } = useNotificationPermission();
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [name, setName] = useState(settings.userName);
+  const [fullScreenAllowed, setFullScreenAllowed] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      canUseFullScreenIntent().then(setFullScreenAllowed);
+    }, []),
+  );
   const prayerCity = findPrayerCity(settings.planPrayerCity);
   const todayPrayers = prayerCity ? prayerBlocks(prayerCity, Date.now(), settings.planPrayerMinutes) : [];
 
@@ -363,6 +371,31 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
           ))}
         </View>
         <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Tasks are also separated by 5 minutes.')}</AppText>
+      </Card>
+
+      <SectionHeader title={tr('Alarms')} />
+      <Card>
+        <ListRow
+          icon="alarm"
+          title={tr('Alarm for new items')}
+          subtitle={tr('Pre-selects the alarm mode when you add information')}
+          switchValue={settings.alarmByDefault}
+          onSwitchChange={value => update('alarmByDefault', value).catch(e => handleError(e, 'settings:alarm'))}
+        />
+        <ListRow
+          icon="clipboard-text-clock-outline"
+          title={tr('Alarm for day-plan tasks')}
+          subtitle={tr('Tasks ring as alarms (write ⏰ in a line for a single task)')}
+          switchValue={settings.planAlarmByDefault}
+          onSwitchChange={value => update('planAlarmByDefault', value).catch(e => handleError(e, 'settings:plan-alarm'))}
+        />
+        <ListRow
+          icon={fullScreenAllowed ? 'cellphone-lock' : 'alert-circle-outline'}
+          iconColor={fullScreenAllowed ? undefined : colors.danger}
+          title={tr('Full screen on the lock screen')}
+          subtitle={fullScreenAllowed ? tr('Allowed') : tr('Not allowed — tap to allow it')}
+          onPress={() => openFullScreenIntentSettings().catch(e => handleError(e, 'settings:fullscreen'))}
+        />
       </Card>
 
       <SectionHeader title={tr('Item of the day')} />

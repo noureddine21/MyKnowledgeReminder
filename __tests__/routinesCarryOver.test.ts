@@ -27,16 +27,16 @@ describe('routines and carry-over', () => {
 
   it('validates routines', async () => {
     await expect(
-      saveRoutine({ title: ' ', durationMin: 30, fixedStartMin: null, important: false, days: [], isActive: true }),
+      saveRoutine({ title: ' ', durationMin: 30, fixedStartMin: null, important: false, days: [], isActive: true, alarm: false }),
     ).rejects.toBeInstanceOf(ValidationError);
   });
 
   it('adds the routines of the day to the plan, without duplicates', async () => {
     // Thursday 26 Nov 2026 = weekday 4
-    await saveRoutine({ title: 'Sport', durationMin: 60, fixedStartMin: null, important: false, days: [1, 3, 4], isActive: true });
-    await saveRoutine({ title: 'Read Quran', durationMin: 20, fixedStartMin: 21 * 60, important: false, days: [0, 1, 2, 3, 4, 5, 6], isActive: true });
-    await saveRoutine({ title: 'Weekend walk', durationMin: 90, fixedStartMin: null, important: false, days: [0, 6], isActive: true });
-    await saveRoutine({ title: 'Paused', durationMin: 30, fixedStartMin: null, important: false, days: [4], isActive: false });
+    await saveRoutine({ title: 'Sport', durationMin: 60, fixedStartMin: null, important: false, days: [1, 3, 4], isActive: true, alarm: false });
+    await saveRoutine({ title: 'Read Quran', durationMin: 20, fixedStartMin: 21 * 60, important: false, days: [0, 1, 2, 3, 4, 5, 6], isActive: true, alarm: false });
+    await saveRoutine({ title: 'Weekend walk', durationMin: 90, fixedStartMin: null, important: false, days: [0, 6], isActive: true, alarm: false });
+    await saveRoutine({ title: 'Paused', durationMin: 30, fixedStartMin: null, important: false, days: [4], isActive: false, alarm: false });
 
     const today = routinesForDay(await listRoutines(), at(26, 8));
     expect(today.map(r => r.title)).toEqual(['Sport', 'Read Quran']);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
 import type { PlanTask } from '../models';
 import { useAppTheme } from '../theme';
 import { applyTimeString } from '../utils/date';
@@ -14,6 +14,7 @@ export interface TaskTiming {
   durationMin: number;
   /** Minutes after midnight, or null to let the planner place the task. */
   fixedStartMin: number | null;
+  alarm: boolean;
 }
 
 interface Props {
@@ -43,11 +44,13 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
   const { colors, radius, spacing } = useAppTheme();
   const [durationMin, setDurationMin] = useState(30);
   const [fixedStartMin, setFixedStartMin] = useState<number | null>(null);
+  const [alarm, setAlarm] = useState(false);
 
   useEffect(() => {
     if (task) {
       setDurationMin(task.durationMin);
       setFixedStartMin(task.fixedStartMin);
+      setAlarm(task.alarm);
     }
   }, [task]);
 
@@ -129,12 +132,23 @@ export function TaskTimeEditor({ task, saving, onCancel, onSave }: Props) {
         </View>
 
         <View style={[styles.row, { marginTop: spacing.lg }]}>
+          <Icon name="alarm" size={20} color={alarm ? colors.accentStrong : colors.textMuted} />
+          <View style={[styles.flex, { marginLeft: spacing.sm }]}>
+            <AppText variant="bodyStrong">{tr('Alarm mode ⏰')}</AppText>
+            <AppText variant="caption" tone="secondary">
+              {tr('Rings until you answer, full screen, cannot be swiped away')}
+            </AppText>
+          </View>
+          <Switch value={alarm} onValueChange={setAlarm} accessibilityLabel={tr('Alarm mode ⏰')} />
+        </View>
+
+        <View style={[styles.row, { marginTop: spacing.lg }]}>
           <Button title={tr('Cancel')} variant="ghost" onPress={onCancel} style={[styles.flex, { marginRight: spacing.sm }]} />
           <Button
             title={tr('Save & re-plan')}
             icon="calendar-refresh"
             loading={saving}
-            onPress={() => onSave({ durationMin, fixedStartMin })}
+            onPress={() => onSave({ durationMin, fixedStartMin, alarm })}
             style={styles.flex}
           />
         </View>

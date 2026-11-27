@@ -21,7 +21,7 @@ const DAYS = [
   { value: 0, short: 'S', label: 'Sun' },
 ];
 const DURATIONS = [10, 15, 20, 30, 45, 60, 90, 120];
-const EMPTY: RoutineInput = { title: '', durationMin: 30, fixedStartMin: null, important: false, days: [1, 2, 3, 4, 5], isActive: true };
+const EMPTY: RoutineInput = { title: '', durationMin: 30, fixedStartMin: null, important: false, days: [1, 2, 3, 4, 5], isActive: true, alarm: false };
 
 const hhmm = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
@@ -199,6 +199,16 @@ function RoutineEditor({
             <AppText variant="caption" tone="secondary">{tr('Placed before the other tasks')}</AppText>
           </View>
           <Switch value={form.important} onValueChange={important => set({ important })} />
+        </View>
+
+        <View style={[styles.row, styles.between, { marginBottom: spacing.lg }]}>
+          <View style={styles.flex}>
+            <AppText variant="bodyStrong">{tr('Alarm mode ⏰')}</AppText>
+            <AppText variant="caption" tone="secondary">
+              {tr('Rings until you answer, full screen, cannot be swiped away')}
+            </AppText>
+          </View>
+          <Switch value={form.alarm} onValueChange={alarm => set({ alarm })} />
         </View>
 
         <View style={styles.row}>

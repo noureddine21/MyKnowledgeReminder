@@ -161,7 +161,10 @@ export async function organizeToday(
   if (Object.keys(windowErrors).length > 0) {
     throw new ValidationError(windowErrors);
   }
-  const organized = organizeDay(tasks, dayOptions(dayWindow, settings, now));
+  const organized = organizeDay(tasks, dayOptions(dayWindow, settings, now)).map(task => ({
+    ...task,
+    alarm: task.alarm ?? settings.planAlarmByDefault,
+  }));
   const key = dateKey(now);
 
   await inTransaction(async tx => {
@@ -224,6 +227,7 @@ export async function replanRemaining(now: number = Date.now()): Promise<PlanRes
       fixedStartMin: t.fixedStartMin,
       important: t.important,
       position: t.position,
+      alarm: t.alarm,
     }));
   const organized = organizeDay(remaining, dayOptions(dayWindow, settings, now));
   const byPosition = new Map(plan.tasks.map(t => [t.position, t]));
@@ -233,7 +237,7 @@ export async function replanRemaining(now: number = Date.now()): Promise<PlanRes
     .map(t => ({ ...t }));
   for (const task of organized) {
     const original = byPosition.get(task.position);
-    data.push({ ...task, isDone: false, doneAt: original?.doneAt ?? null });
+    data.push({ ...task, isDone: false, doneAt: original?.doneAt ?? null, alarm: original?.alarm ?? false });
   }
   data.sort((a, b) => a.position - b.position);
 
@@ -246,6 +250,8 @@ export interface TaskTimingInput {
   durationMin: number;
   /** Minutes after midnight to pin the task, or null to let the planner place it. */
   fixedStartMin: number | null;
+  /** Alarm mode for the task start (unchanged when omitted). */
+  alarm?: boolean;
 }
 
 /**
@@ -269,7 +275,7 @@ export async function editPlanTaskTiming(
   if (!task) {
     throw new ValidationError({ task: 'This task no longer exists.' });
   }
-  await repos.plans.updateTiming(taskId, durationMin, fixedStartMin);
+  await repos.plans.updateTiming(taskId, durationMin, fixedStartMin, timing.alarm);
   return replanRemaining(now);
 }
 
@@ -286,4 +292,21 @@ export async function setPlanTaskDone(taskId: number, done: boolean, now: number
     await dismissPlanTaskNotification(taskId);
   }
   await syncPlanNotifications(now);
+}
+
+export async function getPlanTask(taskId: number) {
+  const repos = await getRepositories();
+  return repos.plans.findTask(taskId);
+}
+
+/** Rings the task again in `minutes` (alarm or notification), without moving it in the plan. */
+export async function snoozePlanTask(taskId: number, minutes: number, now: number = Date.now()): Promise<void> {
+  const repos = await getRepositories();
+  const task = await repos.plans.findTask(taskId);
+  if (!task) {
+    return;
+  }
+  await dismissPlanTaskNotification(taskId);
+  const startAt = now + minutes * 60_000;
+  await schedulePlanTaskNotification({ ...task, startAt, endAt: startAt + task.durationMin * 60_000 });
 }

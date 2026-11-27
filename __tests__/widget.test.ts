@@ -14,6 +14,7 @@ const task = (id: number, title: string, start: number, minutes: number, extra: 
   endAt: start + minutes * 60_000,
   isDone: false,
   doneAt: null,
+  alarm: false,
   ...extra,
 });
 const plan = (tasks: PlanTask[]): DayPlan => ({ planDate: '2026-11-26', rawInput: '', tasks, updatedAt: 0, window: null });

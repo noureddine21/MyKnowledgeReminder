@@ -8,6 +8,7 @@ export interface ReminderData {
   frequency: ReminderFrequency;
   repeatInterval: number;
   isActive: boolean;
+  alarm?: boolean;
   spacedStep: number;
   spacedBaseAt: number | null;
 }
@@ -46,12 +47,13 @@ export class ReminderRepository {
       await this.db.execute(
         `INSERT INTO reminders
            (information_id, scheduled_at, frequency, repeat_interval, is_active, spaced_step, spaced_base_at,
-            created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            alarm, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(information_id) DO UPDATE SET
            scheduled_at = excluded.scheduled_at,
            frequency = excluded.frequency,
            repeat_interval = excluded.repeat_interval,
+           alarm = excluded.alarm,
            is_active = excluded.is_active,
            spaced_step = excluded.spaced_step,
            spaced_base_at = excluded.spaced_base_at,
@@ -64,6 +66,7 @@ export class ReminderRepository {
           data.isActive ? 1 : 0,
           data.spacedStep,
           data.spacedBaseAt,
+          data.alarm ? 1 : 0,
           now,
           now,
         ],

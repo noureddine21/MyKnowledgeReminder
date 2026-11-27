@@ -77,6 +77,7 @@ export function mergeRoutines(tasks: ParsedTask[], routines: Routine[]): ParsedT
       fixedStartMin: routine.fixedStartMin,
       important: routine.important,
       position: merged.length,
+      alarm: routine.alarm,
     });
   }
   return merged;

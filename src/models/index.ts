@@ -48,6 +48,8 @@ export interface Reminder {
   frequency: ReminderFrequency;
   /** Repeating reminders: every N hours/days/weeks/months (1 = every hour/day/...). */
   repeatInterval: number;
+  /** Alarm mode: rings until the user answers, full screen, cannot be swiped away. */
+  alarm: boolean;
   isActive: boolean;
   notificationId: string | null;
   /** Index of the next interval to use in the smart (spaced) schedule. */
@@ -102,12 +104,17 @@ export interface ReminderInput {
   frequency: ReminderFrequency;
   /** Repeating reminders: every N units (defaults to 1). */
   repeatInterval?: number;
+  /** Alarm mode (defaults to off). */
+  alarm?: boolean;
   /** Date + time of the first reminder (for spaced, only the time-of-day is used). */
   scheduledAt: number;
 }
 
 export interface AppSettings {
   themeMode: ThemeMode;
+  /** Alarm mode pre-selected for new items / for day-plan tasks. */
+  alarmByDefault: boolean;
+  planAlarmByDefault: boolean;
   /** Daily goal: number of reviews per day (0 = no goal). */
   dailyGoal: number;
   /** First name shown in the home greeting (optional). */
@@ -179,6 +186,8 @@ export interface PlanTask {
   endAt: number | null;
   isDone: boolean;
   doneAt: number | null;
+  /** Alarm mode for the task start. */
+  alarm: boolean;
 }
 
 export interface DayPlan {
@@ -209,6 +218,8 @@ export interface Routine {
   /** Weekdays, 0 = Sunday … 6 = Saturday. */
   days: number[];
   isActive: boolean;
+  /** Alarm mode for the task created from this routine. */
+  alarm: boolean;
   createdAt: number;
 }
 

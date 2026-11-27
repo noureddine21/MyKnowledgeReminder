@@ -9,7 +9,7 @@ import { DeviceEventEmitter } from 'react-native';
 import notifee, { EventType, type Event } from 'react-native-notify-kit';
 import { DATA_CHANGED_EVENT, NOTIFICATION_CHANNEL_ID } from '../constants';
 import { getRepositories } from '../database/repositories';
-import { openInformationDetails, openPlan } from '../navigation/navigationRef';
+import { openAlarm, openInformationDetails, openPlan } from '../navigation/navigationRef';
 import { logError } from '../utils/errors';
 import {
   NOTIFICATION_ACTIONS,
@@ -17,6 +17,7 @@ import {
   dismissDisplayedNotification,
   ensureChannel,
   informationIdFromData,
+  isAlarmEvent,
   isPlanNotification,
   PLAN_TASK_DONE_ACTION,
   planTaskIdFromData,
@@ -89,11 +90,15 @@ export async function handleNotificationAction(
 /** Day planner notifications: tap opens the Plan tab, "Done" checks the task off. */
 async function handlePlanEvent(event: Event): Promise<void> {
   const data = event.detail.notification?.data;
+  const taskId = planTaskIdFromData(data);
   if (event.type === EventType.PRESS) {
-    openPlan();
+    if (taskId && isAlarmEvent(event.detail)) {
+      openAlarm({ planTaskId: taskId, notificationId: event.detail.notification?.id });
+    } else {
+      openPlan();
+    }
     return;
   }
-  const taskId = planTaskIdFromData(data);
   if (event.type === EventType.ACTION_PRESS && event.detail.pressAction?.id === PLAN_TASK_DONE_ACTION && taskId) {
     await setPlanTaskDone(taskId, true);
     DeviceEventEmitter.emit(DATA_CHANGED_EVENT);
@@ -124,7 +129,11 @@ export async function handleNotificationEvent(event: Event): Promise<void> {
     return;
   }
   if (event.type === EventType.PRESS) {
-    openInformationDetails(id);
+    if (isAlarmEvent(event.detail)) {
+      openAlarm({ informationId: id, notificationId: notification?.id });
+    } else {
+      openInformationDetails(id);
+    }
   } else if (event.type === EventType.ACTION_PRESS && event.detail.pressAction?.id) {
     await handleNotificationAction(event.detail.pressAction.id, id, notification?.id);
   }
@@ -144,8 +153,28 @@ export function registerBackgroundNotificationHandler(): void {
   });
 }
 
+/** Alarm that rings while the app is open: show the Alarm screen right away. */
+function openAlarmIfDelivered(event: Event): boolean {
+  if (event.type !== EventType.DELIVERED || !isAlarmEvent(event.detail)) {
+    return false;
+  }
+  const data = event.detail.notification?.data;
+  const notificationId = event.detail.notification?.id;
+  const taskId = planTaskIdFromData(data);
+  const informationId = informationIdFromData(data);
+  if (taskId) {
+    openAlarm({ planTaskId: taskId, notificationId });
+  } else if (informationId !== null) {
+    openAlarm({ informationId, notificationId });
+  }
+  return true;
+}
+
 export function subscribeToForegroundNotifications(): () => void {
   return notifee.onForegroundEvent(event => {
+    if (openAlarmIfDelivered(event)) {
+      return;
+    }
     handleNotificationEvent(event).catch(error => logError('notifications:foreground', error));
   });
 }
@@ -154,7 +183,21 @@ export function subscribeToForegroundNotifications(): () => void {
 export async function consumeInitialNotification(): Promise<void> {
   try {
     const initial = await notifee.getInitialNotification();
-    if (isPlanNotification(initial?.notification?.data)) {
+    const data = initial?.notification?.data;
+    // Launched by an alarm (full screen or tap): open the Alarm screen.
+    if (initial && isAlarmEvent({ pressAction: initial.pressAction, notification: initial.notification })) {
+      const taskId = planTaskIdFromData(data);
+      const infoId = informationIdFromData(data);
+      if (taskId || infoId !== null) {
+        openAlarm({
+          planTaskId: taskId ?? undefined,
+          informationId: infoId ?? undefined,
+          notificationId: initial.notification.id,
+        });
+        return;
+      }
+    }
+    if (isPlanNotification(data)) {
       openPlan();
       return;
     }

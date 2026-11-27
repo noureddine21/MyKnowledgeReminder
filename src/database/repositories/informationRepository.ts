@@ -9,7 +9,7 @@ const SELECT_ITEMS = `
     c.id AS c_id, c.name AS c_name, c.color AS c_color, c.icon AS c_icon,
     c.is_default AS c_is_default, c.created_at AS c_created_at,
     r.id AS r_id, r.information_id AS r_information_id, r.scheduled_at AS r_scheduled_at,
-    r.frequency AS r_frequency, r.repeat_interval AS r_repeat_interval, r.is_active AS r_is_active, r.notification_id AS r_notification_id,
+    r.frequency AS r_frequency, r.repeat_interval AS r_repeat_interval, r.alarm AS r_alarm, r.is_active AS r_is_active, r.notification_id AS r_notification_id,
     r.spaced_step AS r_spaced_step, r.spaced_base_at AS r_spaced_base_at,
     r.last_reviewed_at AS r_last_reviewed_at, r.created_at AS r_created_at, r.updated_at AS r_updated_at
   FROM information i

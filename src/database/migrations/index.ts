@@ -5,13 +5,14 @@ import { migration003 } from './003_day_planner';
 import { migration004 } from './004_day_window';
 import { migration005 } from './005_routines';
 import { migration006 } from './006_tags';
+import { migration007 } from './007_alarms';
 import type { Migration } from './types';
 
 /**
  * Ordered list of migrations. To change the schema, add a new file
  * (e.g. 002_add_x.ts) and append it here. Never edit a released migration.
  */
-export const MIGRATIONS: Migration[] = [migration001, migration002, migration003, migration004, migration005, migration006];
+export const MIGRATIONS: Migration[] = [migration001, migration002, migration003, migration004, migration005, migration006, migration007];
 
 export async function getSchemaVersion(db: AppDatabase): Promise<number> {
   const result = await db.execute('PRAGMA user_version');

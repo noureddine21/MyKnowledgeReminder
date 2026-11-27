@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon } from '../components';
+import { AlarmScreen } from '../screens/AlarmScreen';
 import { BackupScreen } from '../screens/BackupScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
@@ -145,6 +146,11 @@ export function RootNavigator() {
         <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: tr('Quiz') }} />
         <Stack.Screen name="Stats" component={StatsScreen} options={{ title: tr('Statistics') }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
+        <Stack.Screen
+          name="Alarm"
+          component={AlarmScreen}
+          options={{ headerShown: false, animation: 'fade', gestureEnabled: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

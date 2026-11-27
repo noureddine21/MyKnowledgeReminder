@@ -65,6 +65,8 @@ function parseSettings(raw: Record<string, string>): AppSettings {
     'planTaskNotifications',
     'planAvoidPrayers',
     'dailyItemEnabled',
+    'alarmByDefault',
+    'planAlarmByDefault',
   ] as const) {
     if (raw[key] !== undefined) {
       settings[key] = raw[key] === 'true';

@@ -66,6 +66,16 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
         switchValue={value.enabled}
         onSwitchChange={enabled => set({ enabled })}
       />
+      {value.enabled ? (
+        <ListRow
+          icon="alarm"
+          iconColor={value.alarm ? colors.accentStrong : undefined}
+          title={tr('Alarm mode ⏰')}
+          subtitle={tr('Rings until you answer, full screen, cannot be swiped away')}
+          switchValue={value.alarm ?? false}
+          onSwitchChange={alarm => set({ alarm })}
+        />
+      ) : null}
 
       {value.enabled ? (
         <View style={{ marginTop: spacing.sm }}>

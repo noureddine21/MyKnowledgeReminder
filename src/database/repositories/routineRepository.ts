@@ -20,6 +20,7 @@ function mapRoutine(row: SqlRow): Routine {
     important: Number(row.important) === 1,
     days: parseDays(row.days),
     isActive: Number(row.is_active) === 1,
+    alarm: Number(row.alarm) === 1,
     createdAt: Number(row.created_at),
   };
 }
@@ -37,8 +38,8 @@ export class RoutineRepository {
   insert(input: RoutineInput, now: number): Promise<number> {
     return withDbError('save the routine', async () => {
       const result = await this.db.execute(
-        `INSERT INTO routines (title, duration_min, fixed_start_min, important, days, is_active, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO routines (title, duration_min, fixed_start_min, important, days, is_active, alarm, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.title,
           input.durationMin,
@@ -46,6 +47,7 @@ export class RoutineRepository {
           input.important ? 1 : 0,
           JSON.stringify(input.days),
           input.isActive ? 1 : 0,
+          input.alarm ? 1 : 0,
           now,
         ],
       );
@@ -56,7 +58,8 @@ export class RoutineRepository {
   update(id: number, input: RoutineInput): Promise<void> {
     return withDbError('save the routine', async () => {
       await this.db.execute(
-        `UPDATE routines SET title = ?, duration_min = ?, fixed_start_min = ?, important = ?, days = ?, is_active = ?
+        `UPDATE routines SET title = ?, duration_min = ?, fixed_start_min = ?, important = ?, days = ?, is_active = ?,
+           alarm = ?
          WHERE id = ?`,
         [
           input.title,
@@ -65,6 +68,7 @@ export class RoutineRepository {
           input.important ? 1 : 0,
           JSON.stringify(input.days),
           input.isActive ? 1 : 0,
+          input.alarm ? 1 : 0,
           id,
         ],
       );

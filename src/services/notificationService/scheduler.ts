@@ -8,7 +8,8 @@ import notifee, {
   type Notification,
   type TimestampTrigger,
 } from 'react-native-notify-kit';
-import { NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME } from '../../constants';
+import { ALARM_CHANNEL_NAME, NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME } from '../../constants';
+import { ALARM_CHANNEL, alarmOptions } from './alarm';
 import type { Reminder } from '../../models';
 import { AppError, logError } from '../../utils/errors';
 import { getNotificationTimestamp } from '../reviewSchedule';
@@ -35,6 +36,13 @@ export function ensureChannel(): Promise<void> {
         importance: AndroidImportance.HIGH,
         vibration: true,
       })
+      .then(() =>
+        notifee.createChannel({
+          ...ALARM_CHANNEL,
+          name: ALARM_CHANNEL_NAME,
+          description: 'Reminders and tasks you chose to receive as an alarm',
+        }),
+      )
       .then(() => undefined)
       .catch(error => {
         channelReady = null;
@@ -66,6 +74,8 @@ export interface ScheduleTarget {
   source: string | null;
   categoryName: string | null;
   categoryColor: string | null;
+  /** Alarm mode (rings until answered, full screen). */
+  alarm?: boolean;
   reminder: Reminder;
 }
 
@@ -104,6 +114,7 @@ export function buildReminderNotification(
         { title: tr('Snooze 1 h'), pressAction: { id: NOTIFICATION_ACTIONS.snoozeLong } },
       ],
       autoCancel: true,
+      ...(target.alarm ? alarmOptions() : {}),
     },
   };
 }

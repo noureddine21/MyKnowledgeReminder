@@ -6,6 +6,7 @@
  *    - duration: 1h, 2h30, 1.5h, 45m, 45min, 20mn (default 30 min)
  *    - fixed time: @14:00, @14h, @9h30, "à 14h", "at 9:30"
  *    - "!" at the start or end = important
+ *    - "⏰" anywhere = alarm (rings until answered)
  * 2. `organizeDay` turns the tasks into a timetable between the day start/end:
  *    fixed tasks keep their time; the others are placed in order (important first),
  *    with 5 min between tasks, a 15 min break after 2 h of work, lunch and work hours
@@ -31,6 +32,8 @@ export interface ParsedTask {
   important: boolean;
   /** Position in the user's list. */
   position: number;
+  /** Alarm mode: true with "⏰" in the line; undefined = use the default from Settings. */
+  alarm?: boolean;
 }
 
 export interface OrganizedTask extends ParsedTask {
@@ -84,6 +87,12 @@ export function parseTaskLine(line: string, position: number): ParsedTask | null
     return null;
   }
 
+  let alarm: boolean | undefined;
+  if (text.includes('⏰')) {
+    alarm = true;
+    text = text.replace(/⏰/g, ' ').trim();
+  }
+
   let important = false;
   if (text.startsWith('!') || text.endsWith('!')) {
     important = true;
@@ -123,6 +132,7 @@ export function parseTaskLine(line: string, position: number): ParsedTask | null
     fixedStartMin,
     important,
     position,
+    ...(alarm ? { alarm } : {}),
   };
 }
 

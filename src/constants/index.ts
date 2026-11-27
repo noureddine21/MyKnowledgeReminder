@@ -4,6 +4,8 @@ export const DATABASE_NAME = 'my_knowledge_reminder.sqlite';
 
 export const NOTIFICATION_CHANNEL_ID = 'review-reminders';
 export const NOTIFICATION_CHANNEL_NAME = 'Review reminders';
+export const ALARM_CHANNEL_ID = 'review-alarms';
+export const ALARM_CHANNEL_NAME = 'Alarms';
 
 export const DEFAULT_REVIEW_INTERVALS = [1, 3, 7, 30];
 
@@ -12,6 +14,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'system',
   userName: '',
   dailyGoal: 5,
+  alarmByDefault: false,
+  planAlarmByDefault: false,
   reviewIntervals: DEFAULT_REVIEW_INTERVALS,
   useSmartScheduleByDefault: true,
   defaultReminderTime: '09:00',

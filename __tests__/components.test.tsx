@@ -22,6 +22,7 @@ const item: InformationItem = {
     scheduledAt: at(2026, 1, 11),
     frequency: 'once',
     repeatInterval: 1,
+    alarm: false,
     isActive: true,
     notificationId: 'info-1',
     spacedStep: 0,

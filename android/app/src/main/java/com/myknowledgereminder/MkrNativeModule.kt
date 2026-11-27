@@ -1,6 +1,9 @@
 package com.myknowledgereminder
 
 import android.app.Activity
+import android.app.NotificationManager
+import android.os.Build
+import android.provider.Settings
 import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
@@ -114,6 +117,53 @@ class MkrNativeModule(private val context: ReactApplicationContext) :
           }
     } catch (e: Exception) {
       promise.reject(E_OCR, e.message ?: "The image could not be read.", e)
+    }
+  }
+
+  /** Lets the Alarm screen appear over the lock screen and wake the display (only while it is shown). */
+  @ReactMethod
+  fun setShowWhenLocked(enabled: Boolean, promise: Promise) {
+    val activity = context.currentActivity ?: return promise.resolve(false)
+    activity.runOnUiThread {
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+          activity.setShowWhenLocked(enabled)
+          activity.setTurnScreenOn(enabled)
+        } else {
+          @Suppress("DEPRECATION")
+          val flags = android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+              android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+          @Suppress("DEPRECATION")
+          if (enabled) activity.window.addFlags(flags) else activity.window.clearFlags(flags)
+        }
+        promise.resolve(true)
+      } catch (e: Exception) {
+        promise.reject(E_UNAVAILABLE, e.message ?: "Not available.", e)
+      }
+    }
+  }
+
+  /** Android 14+ requires the user to allow full-screen notifications for non-clock apps. */
+  @ReactMethod
+  fun canUseFullScreenIntent(promise: Promise) {
+    if (Build.VERSION.SDK_INT < 34) return promise.resolve(true)
+    val manager = context.getSystemService(NotificationManager::class.java)
+    promise.resolve(manager?.canUseFullScreenIntent() ?: false)
+  }
+
+  @ReactMethod
+  fun openFullScreenIntentSettings(promise: Promise) {
+    try {
+      val intent = if (Build.VERSION.SDK_INT >= 34) {
+        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:${context.packageName}"))
+      } else {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+      }
+      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      context.startActivity(intent)
+      promise.resolve(true)
+    } catch (e: Exception) {
+      promise.reject(E_UNAVAILABLE, e.message ?: "Settings not available.", e)
     }
   }
 

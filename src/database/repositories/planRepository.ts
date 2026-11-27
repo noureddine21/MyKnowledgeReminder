@@ -13,6 +13,7 @@ export interface PlanTaskData {
   endAt: number | null;
   isDone?: boolean;
   doneAt?: number | null;
+  alarm?: boolean;
 }
 
 export class PlanRepository {
@@ -78,8 +79,8 @@ export class PlanRepository {
       for (const task of tasks) {
         await this.db.execute(
           `INSERT INTO plan_tasks
-             (plan_date, title, duration_min, fixed_start_min, important, position, start_at, end_at, is_done, done_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             (plan_date, title, duration_min, fixed_start_min, important, position, start_at, end_at, is_done, done_at, alarm)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             planDate,
             task.title,
@@ -91,6 +92,7 @@ export class PlanRepository {
             task.endAt,
             task.isDone ? 1 : 0,
             task.doneAt ?? null,
+            task.alarm ? 1 : 0,
           ],
         );
       }
@@ -104,13 +106,12 @@ export class PlanRepository {
   }
 
   /** Changes the user-chosen duration and fixed start (null = let the planner place it). */
-  updateTiming(id: number, durationMin: number, fixedStartMin: number | null): Promise<void> {
+  updateTiming(id: number, durationMin: number, fixedStartMin: number | null, alarm?: boolean): Promise<void> {
     return withDbError('update the task', async () => {
-      await this.db.execute('UPDATE plan_tasks SET duration_min = ?, fixed_start_min = ? WHERE id = ?', [
-        durationMin,
-        fixedStartMin,
-        id,
-      ]);
+      await this.db.execute(
+        'UPDATE plan_tasks SET duration_min = ?, fixed_start_min = ?, alarm = COALESCE(?, alarm) WHERE id = ?',
+        [durationMin, fixedStartMin, alarm === undefined ? null : alarm ? 1 : 0, id],
+      );
     });
   }
 
