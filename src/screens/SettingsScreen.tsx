@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { AppText, Card, Chip, CityPicker, ListRow, Screen, SectionHeader } from '../components';
+import { AppText, Card, Chip, CityPicker, ListRow, Screen, SectionHeader, TextField } from '../components';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
@@ -9,7 +9,12 @@ import type { RootStackScreenProps } from '../navigation/types';
 import { scheduleDailyItems } from '../services/dailyItemService';
 import { applyLanguage } from '../i18n/apply';
 import { applyPlannerSettings } from '../services/planService';
-import { PLAN_BREAK_AFTER_OPTIONS, PLAN_BREAK_MINUTES_OPTIONS, PLAN_PRAYER_MINUTES_OPTIONS } from '../constants';
+import {
+  DAILY_GOAL_OPTIONS,
+  PLAN_BREAK_AFTER_OPTIONS,
+  PLAN_BREAK_MINUTES_OPTIONS,
+  PLAN_PRAYER_MINUTES_OPTIONS,
+} from '../constants';
 import { formatDuration } from '../services/dayPlanner';
 import { findPrayerCity, prayerBlocks } from '../services/prayerTimes';
 import { useAppTheme } from '../theme';
@@ -47,6 +52,7 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
   const handleError = useErrorHandler();
   const { state, ensurePermission } = useNotificationPermission();
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
+  const [name, setName] = useState(settings.userName);
   const prayerCity = findPrayerCity(settings.planPrayerCity);
   const todayPrayers = prayerCity ? prayerBlocks(prayerCity, Date.now(), settings.planPrayerMinutes) : [];
 
@@ -105,6 +111,31 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
 
   return (
     <Screen>
+      <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Profile')}</AppText>
+      <TextField
+        label={tr('Your first name')}
+        value={name}
+        onChangeText={setName}
+        onEndEditing={() => update('userName', name.trim()).catch(e => handleError(e, 'settings:name'))}
+        placeholder={tr('Shown in the greeting on Home')}
+        maxLength={40}
+        autoCapitalize="words"
+      />
+      <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>
+        {tr('Daily goal (reviews per day)')}
+      </AppText>
+      <View style={[styles.wrap, { marginBottom: spacing.lg }]}>
+        {DAILY_GOAL_OPTIONS.map(goal => (
+          <Chip
+            key={goal}
+            label={goal === 0 ? tr('Off') : String(goal)}
+            icon={goal === settings.dailyGoal && goal > 0 ? 'target' : undefined}
+            selected={settings.dailyGoal === goal}
+            onPress={() => update('dailyGoal', goal).catch(e => handleError(e, 'settings:goal'))}
+          />
+        ))}
+      </View>
+
       <AppText variant="h3" style={{ marginBottom: spacing.md }}>{tr('Language')}</AppText>
       <View style={[styles.wrap, { marginBottom: spacing.lg }]}>
         {LANGUAGE_OPTIONS.map(option => (

@@ -22,7 +22,7 @@ import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { StatsScreen } from '../screens/StatsScreen';
-import { shadow, useAppTheme } from '../theme';
+import { fonts, shadow, useAppTheme } from '../theme';
 import { flushPendingNavigation, navigationRef } from './navigationRef';
 import type { RootStackParamList, TabParamList } from './types';
 
@@ -55,7 +55,7 @@ function AddTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) 
         style={({ pressed }) => [
           styles.addButton,
           {
-            backgroundColor: colors.primary,
+            backgroundColor: colors.accent,
             borderColor: colors.surface,
             transform: [{ scale: pressed ? 0.94 : 1 }],
             opacity: focused ? 1 : 0.95,
@@ -63,7 +63,7 @@ function AddTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) 
           shadow(dark, 3),
         ]}
       >
-        <Icon name="plus" size={30} color={colors.primaryContrast} />
+        <Icon name="plus" size={30} color={colors.hero} />
       </Pressable>
     </View>
   );
@@ -83,11 +83,11 @@ function Tabs() {
           paddingTop: 6,
           paddingBottom: 8,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 11, fontFamily: fonts.semibold },
         headerStyle: { backgroundColor: colors.background },
         headerShadowVisible: false,
         headerTintColor: colors.text,
-        headerTitleStyle: { fontWeight: '700' },
+        headerTitleStyle: { fontFamily: fonts.bold },
         tabBarIcon: props => TabIcon({ route: route.name, ...props }),
       })}
     >
@@ -131,7 +131,7 @@ export function RootNavigator() {
           headerStyle: { backgroundColor: colors.background },
           headerShadowVisible: false,
           headerTintColor: colors.text,
-          headerTitleStyle: { fontWeight: '700' },
+          headerTitleStyle: { fontFamily: fonts.bold },
           contentStyle: { backgroundColor: colors.background },
         }}
       >
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   addButton: {
     width: 58,
     height: 58,
-    borderRadius: 29,
+    borderRadius: 20,
     borderWidth: 4,
     marginTop: -22,
     alignItems: 'center',

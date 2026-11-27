@@ -75,5 +75,5 @@ export function Button({
 const styles = StyleSheet.create({
   base: { alignItems: 'center', justifyContent: 'center', borderWidth: 1, minHeight: 40 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  label: { marginLeft: 6, fontWeight: '600' },
+  label: { marginLeft: 6 },
 });

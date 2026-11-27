@@ -3,6 +3,7 @@ import {
   PLAN_BREAK_AFTER_OPTIONS,
   PLAN_BREAK_MINUTES_OPTIONS,
   PLAN_PRAYER_MINUTES_OPTIONS,
+  DAILY_GOAL_OPTIONS,
 } from '../../constants';
 import type { AppSettings, ThemeMode } from '../../models';
 import { withDbError } from '../../utils/errors';
@@ -17,6 +18,13 @@ function parseSettings(raw: Record<string, string>): AppSettings {
   const theme = raw.themeMode as ThemeMode | undefined;
   if (theme === 'system' || theme === 'light' || theme === 'dark') {
     settings.themeMode = theme;
+  }
+  const goal = Number(raw.dailyGoal);
+  if (raw.dailyGoal !== undefined && DAILY_GOAL_OPTIONS.includes(goal)) {
+    settings.dailyGoal = goal;
+  }
+  if (typeof raw.userName === 'string') {
+    settings.userName = raw.userName.slice(0, 40);
   }
   if (raw.language === 'system' || raw.language === 'en' || raw.language === 'fr' || raw.language === 'ar') {
     settings.language = raw.language;

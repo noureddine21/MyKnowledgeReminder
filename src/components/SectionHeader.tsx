@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useAppTheme } from '../theme';
+import { useAppTheme, fonts } from '../theme';
 import { AppText } from './AppText';
 
 interface Props {
@@ -27,5 +27,5 @@ export function SectionHeader({ title, actionLabel, onAction }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  action: { fontWeight: '600' },
+  action: { fontFamily: fonts.semibold },
 });

@@ -9,6 +9,14 @@ export interface ColorPalette {
   primary: string;
   primaryContrast: string;
   primarySoft: string;
+  /** Gold accent (highlights, the Add button, streaks). */
+  accent: string;
+  /** Darker gold, readable on light backgrounds. */
+  accentStrong: string;
+  accentSoft: string;
+  /** Deep emerald used for hero headers. */
+  hero: string;
+  heroText: string;
   success: string;
   successSoft: string;
   warning: string;
@@ -18,45 +26,78 @@ export interface ColorPalette {
   overlay: string;
 }
 
+/** "Emerald & gold" — light. */
 export const lightColors: ColorPalette = {
-  background: '#F4F5FB',
+  background: '#F6F3EA',
   surface: '#FFFFFF',
-  surfaceAlt: '#EEF0F6',
-  text: '#111827',
-  textSecondary: '#4B5563',
-  textMuted: '#6B7280',
-  border: '#E6E8F0',
-  primary: '#4F46E5',
+  surfaceAlt: '#EFEADB',
+  text: '#12261F',
+  textSecondary: '#4B5C55',
+  textMuted: '#62716A',
+  border: '#E4DCC6',
+  primary: '#0B4A3A',
   primaryContrast: '#FFFFFF',
-  primarySoft: '#EEF2FF',
-  success: '#047857',
-  successSoft: '#D1FAE5',
-  warning: '#B45309',
-  warningSoft: '#FEF3C7',
-  danger: '#DC2626',
-  dangerSoft: '#FEE2E2',
-  overlay: 'rgba(17, 24, 39, 0.45)',
+  primarySoft: '#E2EEE8',
+  accent: '#E7C873',
+  accentStrong: '#8C6510',
+  accentSoft: '#FBF1D6',
+  hero: '#0B4A3A',
+  heroText: '#FFFFFF',
+  success: '#0F7B4E',
+  successSoft: '#DDF3E7',
+  warning: '#9A5B00',
+  warningSoft: '#FFF1DA',
+  danger: '#B42318',
+  dangerSoft: '#FDE4E1',
+  overlay: 'rgba(18, 38, 31, 0.45)',
 };
 
+/** "Emerald & gold" — dark. */
 export const darkColors: ColorPalette = {
-  background: '#0B0F19',
-  surface: '#151B2B',
-  surfaceAlt: '#1E2638',
-  text: '#F3F4F6',
-  textSecondary: '#C5CAD3',
-  textMuted: '#9CA3AF',
-  border: '#273046',
-  primary: '#818CF8',
-  primaryContrast: '#0B0F19',
-  primarySoft: '#25235A',
-  success: '#34D399',
-  successSoft: '#063F31',
-  warning: '#FBBF24',
-  warningSoft: '#3F2A06',
-  danger: '#F87171',
-  dangerSoft: '#4A1212',
+  background: '#08130F',
+  surface: '#10211B',
+  surfaceAlt: '#172C25',
+  text: '#EEF4F0',
+  textSecondary: '#B8C8C0',
+  textMuted: '#8FA59B',
+  border: '#22392F',
+  primary: '#43BE91',
+  primaryContrast: '#05120D',
+  primarySoft: '#123528',
+  accent: '#E7C873',
+  accentStrong: '#E7C873',
+  accentSoft: '#33290F',
+  hero: '#0D3A2E',
+  heroText: '#FFFFFF',
+  success: '#4ADE9A',
+  successSoft: '#0B3524',
+  warning: '#F2C46B',
+  warningSoft: '#3A2A0C',
+  danger: '#F68A7F',
+  dangerSoft: '#46160F',
   overlay: 'rgba(0, 0, 0, 0.6)',
 };
+
+/** Bundled fonts (android/app/src/main/assets/fonts). Android selects them by file name. */
+export const fonts = {
+  regular: 'PlusJakartaSans-Regular',
+  medium: 'PlusJakartaSans-Medium',
+  semibold: 'PlusJakartaSans-SemiBold',
+  bold: 'PlusJakartaSans-Bold',
+  extrabold: 'PlusJakartaSans-ExtraBold',
+  arabic: 'Amiri-Regular',
+  arabicBold: 'Amiri-Bold',
+} as const;
+
+/** True when the text is mostly Arabic script (used to switch to the Amiri font). */
+export function isArabicText(text: string): boolean {
+  const letters = text.replace(/[\s\d!-/:-@[-`{-~،؛؟٪-٭]/g, '');
+  if (!letters) {
+    return false;
+  }
+  const arabic = (letters.match(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g) ?? []).length;
+  return arabic / letters.length > 0.5;
+}
 
 export const spacing = {
   xs: 4,
@@ -70,19 +111,28 @@ export const spacing = {
 export const radius = {
   sm: 8,
   md: 12,
-  lg: 16,
-  xl: 24,
+  lg: 20,
+  xl: 28,
   pill: 999,
 } as const;
 
+/** Style for a text block whose content is Arabic (Amiri, right-to-left). */
+export function arabicTextStyle(text: string) {
+  return isArabicText(text)
+    ? { fontFamily: fonts.arabic, fontSize: 22, lineHeight: 40, textAlign: 'right' as const, writingDirection: 'rtl' as const }
+    : null;
+}
+
 export const typography = {
-  title: { fontSize: 26, fontWeight: '700' as const, lineHeight: 32 },
-  h2: { fontSize: 20, fontWeight: '700' as const, lineHeight: 26 },
-  h3: { fontSize: 17, fontWeight: '600' as const, lineHeight: 22 },
-  body: { fontSize: 15, fontWeight: '400' as const, lineHeight: 22 },
-  bodyStrong: { fontSize: 15, fontWeight: '600' as const, lineHeight: 22 },
-  small: { fontSize: 13, fontWeight: '400' as const, lineHeight: 18 },
-  caption: { fontSize: 12, fontWeight: '500' as const, lineHeight: 16 },
+  title: { fontSize: 27, fontFamily: fonts.extrabold, lineHeight: 34 },
+  h2: { fontSize: 20, fontFamily: fonts.bold, lineHeight: 27 },
+  h3: { fontSize: 17, fontFamily: fonts.bold, lineHeight: 23 },
+  body: { fontSize: 15, fontFamily: fonts.regular, lineHeight: 22 },
+  bodyStrong: { fontSize: 15, fontFamily: fonts.semibold, lineHeight: 22 },
+  small: { fontSize: 13, fontFamily: fonts.regular, lineHeight: 19 },
+  caption: { fontSize: 12, fontFamily: fonts.medium, lineHeight: 16 },
+  /** Arabic verses, hadiths and Arabic notes. */
+  arabic: { fontSize: 22, fontFamily: fonts.arabic, lineHeight: 40 },
 };
 
 export type TypographyVariant = keyof typeof typography;
@@ -109,7 +159,7 @@ export function shadow(dark: boolean, level: 1 | 2 | 3 = 1) {
   }
   const config = { 1: [2, 6, 0.06, 2], 2: [4, 12, 0.1, 5], 3: [8, 20, 0.16, 10] }[level];
   return {
-    shadowColor: '#1E1B4B',
+    shadowColor: '#0B4A3A',
     shadowOffset: { width: 0, height: config[0] },
     shadowRadius: config[1],
     shadowOpacity: config[2],

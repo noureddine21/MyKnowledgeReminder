@@ -24,7 +24,7 @@ import type { RootStackScreenProps } from '../navigation/types';
 import { getInformation, getReviewHistory } from '../services/informationService';
 import { getNextReminderAt, isDueToday } from '../services/reviewSchedule';
 import { setReminderActive } from '../services/reviewService';
-import { useAppTheme } from '../theme';
+import { useAppTheme, arabicTextStyle } from '../theme';
 import { formatDateTime, formatRelative } from '../utils/date';
 import { formatRecurrence } from '../utils/recurrence';
 import { ValidationError } from '../utils/errors';
@@ -118,7 +118,7 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
       ) : null}
 
       <Card style={{ marginTop: spacing.lg }}>
-        <AppText selectable style={styles.content}>
+        <AppText selectable style={[styles.content, arabicTextStyle(item.content)]}>
           {item.content}
         </AppText>
       </Card>

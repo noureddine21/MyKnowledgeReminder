@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import { useAppTheme, withAlpha } from '../theme';
+import { useAppTheme, withAlpha, fonts } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 
@@ -52,5 +52,5 @@ export function Chip({ label, selected = false, color, icon, onPress, onLongPres
 const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, minHeight: 36 },
   label: { marginLeft: 6 },
-  selected: { fontWeight: '600' },
+  selected: { fontFamily: fonts.semibold },
 });

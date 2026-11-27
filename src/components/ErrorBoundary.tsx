@@ -46,6 +46,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#F5F6FA' },
   title: { fontSize: 20, fontWeight: '700', color: '#111827', marginBottom: 8 },
   message: { fontSize: 15, color: '#4B5563', textAlign: 'center', marginBottom: 20 },
-  button: { backgroundColor: '#4F46E5', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  button: { backgroundColor: '#0B4A3A', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
   buttonText: { color: '#FFFFFF', fontWeight: '600' },
 });

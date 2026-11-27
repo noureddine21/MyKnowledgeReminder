@@ -15,14 +15,14 @@
         android:pathData="M55,40 C61,35 69,34 77,35 L77,71 C69,70 61,71 55,76 Z" />
     <!-- Text lines -->
     <path
-        android:strokeColor="#C7D2FE"
+        android:strokeColor="#CFE3DA"
         android:strokeWidth="2"
         android:strokeLineCap="round"
         android:pathData="M36,46 L48,47 M36,53 L48,54 M36,60 L48,61 M60,47 L72,46 M60,54 L72,53 M60,61 L72,60" />
     <!-- Reminder dot -->
     <path
-        android:fillColor="#F59E0B"
-        android:strokeColor="#4F46E5"
+        android:fillColor="#E7C873"
+        android:strokeColor="#0B4A3A"
         android:strokeWidth="3"
         android:pathData="M74,36 m-8,0 a8,8 0 1,0 16,0 a8,8 0 1,0 -16,0" />
 </vector>

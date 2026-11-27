@@ -88,7 +88,7 @@ export async function scheduleDailyItems(now: number = Date.now(), random: () =>
           android: {
             channelId: NOTIFICATION_CHANNEL_ID,
             smallIcon: 'ic_stat_notification',
-            color: item.category?.color ?? '#4F46E5',
+            color: item.category?.color ?? '#0B4A3A',
             category: AndroidCategory.RECOMMENDATION,
             style: { type: AndroidStyle.BIGTEXT, text: buildExpandedText('', item.content, item.source).trim() },
             pressAction: { id: 'default', launchActivity: 'default' },
@@ -104,4 +104,16 @@ export async function scheduleDailyItems(now: number = Date.now(), random: () =>
     logError('dailyItem:schedule', error);
     return 0;
   }
+}
+
+/** The item shown on the home screen today: stable for the whole day, changes every day. */
+export function pickItemOfTheDay(items: InformationItem[], source: DailyItemSource, now: number): InformationItem | null {
+  const eligible = eligibleItems(items, source);
+  if (eligible.length === 0) {
+    return null;
+  }
+  const d = new Date(now);
+  const seed = d.getFullYear() * 372 + d.getMonth() * 31 + d.getDate();
+  const sorted = [...eligible].sort((a, b) => a.id - b.id);
+  return sorted[seed % sorted.length];
 }

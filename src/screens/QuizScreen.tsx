@@ -5,7 +5,7 @@ import type { InformationItem } from '../models';
 import type { RootStackScreenProps } from '../navigation/types';
 import { listInformation } from '../services/informationService';
 import { getDueToday, gradeReview, recordPractice, type QuizGrade } from '../services/reviewService';
-import { useAppTheme, withAlpha } from '../theme';
+import { useAppTheme, withAlpha, arabicTextStyle } from '../theme';
 import { formatRelative } from '../utils/date';
 import { describeError, logError } from '../utils/errors';
 
@@ -185,7 +185,7 @@ export function QuizScreen({ route, navigation }: RootStackScreenProps<'Quiz'>) 
           {revealed ? (
             <View style={{ marginTop: spacing.lg }}>
               <View style={[styles.divider, { backgroundColor: colors.border, marginBottom: spacing.lg }]} />
-              <AppText style={styles.content} selectable>
+              <AppText style={[styles.content, arabicTextStyle(current?.content ?? '')]} selectable>
                 {current?.content}
               </AppText>
               {current?.source ? (

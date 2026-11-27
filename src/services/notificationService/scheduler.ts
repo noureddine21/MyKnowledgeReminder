@@ -69,7 +69,7 @@ export interface ScheduleTarget {
   reminder: Reminder;
 }
 
-const DEFAULT_COLOR = '#4F46E5';
+const DEFAULT_COLOR = '#0B4A3A';
 const GROUP_ID = 'review-reminders';
 
 /** Rich reminder: expandable content preview, category colour, and quick actions. */

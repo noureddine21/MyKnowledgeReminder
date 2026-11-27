@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { Category } from '../models';
-import { useAppTheme, withAlpha } from '../theme';
+import { useAppTheme, withAlpha, fonts } from '../theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
 
@@ -28,5 +28,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  label: { marginLeft: 4, fontWeight: '600' },
+  label: { marginLeft: 4, fontFamily: fonts.semibold },
 });

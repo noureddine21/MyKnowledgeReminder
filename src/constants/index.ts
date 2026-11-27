@@ -10,6 +10,8 @@ export const DEFAULT_REVIEW_INTERVALS = [1, 3, 7, 30];
 export const DEFAULT_SETTINGS: AppSettings = {
   themeMode: 'system',
   language: 'system',
+  userName: '',
+  dailyGoal: 5,
   reviewIntervals: DEFAULT_REVIEW_INTERVALS,
   useSmartScheduleByDefault: true,
   defaultReminderTime: '09:00',
@@ -34,6 +36,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dailyItemSource: 'all',
   lastBackupAt: null,
 };
+
+export const DAILY_GOAL_OPTIONS = [0, 3, 5, 10, 15, 20];
 
 export const PLAN_PRAYER_MINUTES_OPTIONS = [10, 15, 20, 30, 45];
 

@@ -14,7 +14,7 @@ import { useFocusData } from '../hooks/useFocusData';
 import { useReviewActions } from '../hooks/useReviewActions';
 import type { TabScreenProps } from '../navigation/types';
 import { getDueToday, type DueItem } from '../services/reviewService';
-import { useAppTheme } from '../theme';
+import { useAppTheme, fonts } from '../theme';
 import { formatLongToday, formatRelative } from '../utils/date';
 
 import { tr, trn } from '../i18n';
@@ -181,6 +181,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dueBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
-  bold: { fontWeight: '600' },
+  bold: { fontFamily: fonts.semibold },
   iconButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });
