@@ -167,10 +167,6 @@ export function spacedStepDate(
   return combineDateAndTime(addDays(startOfDay(baseAt), intervalDays), timeRef);
 }
 
-export function spacedReviewDates(baseAt: number, intervals: number[], timeRef: number): number[] {
-  return intervals.map(days => spacedStepDate(baseAt, days, timeRef));
-}
-
 /** Earliest future moment at the time-of-day of `timeRef` (today if still ahead, else tomorrow). */
 export function nextSlot(timeRef: number, now: number): number {
   const today = combineDateAndTime(now, timeRef);

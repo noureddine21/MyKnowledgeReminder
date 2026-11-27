@@ -60,7 +60,7 @@ describe('components', () => {
     expect(text).toContain('Tomorrow, 09:00');
   });
 
-  it('shows smart schedule dates in the reminder editor', async () => {
+  it('shows the smart schedule without the list of review dates', async () => {
     let renderer!: ReactTestRenderer.ReactTestRenderer;
     await ReactTestRenderer.act(async () => {
       renderer = ReactTestRenderer.create(
@@ -68,15 +68,13 @@ describe('components', () => {
           <ReminderEditor
             value={{ enabled: true, frequency: 'spaced', scheduledAt: at(2026, 1, 10, 9) }}
             onChange={jest.fn()}
-            createdAt={at(2026, 1, 10, 8)}
-            intervals={[1, 3, 7, 30]}
             now={at(2026, 1, 10, 12)}
           />
         </ThemeProvider>,
       );
     });
     const text = textOf(renderer);
-    expect(text).toContain('11 Jan 2026');
-    expect(text).toContain('9 Feb 2026');
+    expect(text).toContain('Reminder time');
+    expect(text).not.toContain('11 Jan 2026');
   });
 });

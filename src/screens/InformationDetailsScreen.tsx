@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CategoryBadge,
-  TagPill,
   EmptyState,
   ErrorView,
   Icon,
@@ -212,13 +211,6 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
             {item.collectionPosition ? ` · #${item.collectionPosition}` : ''}
           </AppText>
         </Pressable>
-      ) : null}
-      {item.tags && item.tags.length > 0 ? (
-        <View style={[styles.tagRow, { marginTop: spacing.sm }]}>
-          {item.tags.map(tag => (
-            <TagPill key={tag.id} name={tag.name} color={tag.color} />
-          ))}
-        </View>
       ) : null}
       {item.source ? (
         <View style={[styles.row, { marginTop: spacing.xs }]}>

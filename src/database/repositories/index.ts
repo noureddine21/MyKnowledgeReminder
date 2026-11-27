@@ -8,7 +8,6 @@ import { ReminderRepository } from './reminderRepository';
 import { RoutineRepository } from './routineRepository';
 import { ReviewHistoryRepository } from './reviewHistoryRepository';
 import { SettingsRepository } from './settingsRepository';
-import { TagRepository } from './tagRepository';
 
 export interface Repositories {
   categories: CategoryRepository;
@@ -19,7 +18,6 @@ export interface Repositories {
   routines: RoutineRepository;
   reviewHistory: ReviewHistoryRepository;
   settings: SettingsRepository;
-  tags: TagRepository;
 }
 
 export function createRepositories(executor: SqlExecutor): Repositories {
@@ -32,7 +30,6 @@ export function createRepositories(executor: SqlExecutor): Repositories {
     routines: new RoutineRepository(executor),
     reviewHistory: new ReviewHistoryRepository(executor),
     settings: new SettingsRepository(executor),
-    tags: new TagRepository(executor),
   };
 }
 
@@ -60,6 +57,5 @@ export {
   ReviewHistoryRepository,
   RoutineRepository,
   SettingsRepository,
-  TagRepository,
 };
 export type { CategoryWithCount } from './categoryRepository';

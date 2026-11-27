@@ -8,7 +8,6 @@ import {
   isDueToday,
   latestOccurrenceOnOrBefore,
   nextOccurrenceAfter,
-  spacedReviewDates,
 } from '../src/services/reviewSchedule';
 
 const at = (y: number, m: number, d: number, h = 9, min = 0) => new Date(y, m - 1, d, h, min).getTime();
@@ -110,15 +109,6 @@ describe('smart (spaced) schedule', () => {
   const intervals = [1, 3, 7, 30];
   const created = at(2026, 1, 10, 15);
   const timeRef = at(2000, 1, 1, 9);
-
-  it('computes review dates relative to the creation day', () => {
-    expect(spacedReviewDates(created, intervals, timeRef)).toEqual([
-      at(2026, 1, 11, 9),
-      at(2026, 1, 13, 9),
-      at(2026, 1, 17, 9),
-      at(2026, 2, 9, 9),
-    ]);
-  });
 
   it('starts at the first future step', () => {
     expect(initialSpacedSchedule(created, intervals, timeRef, at(2026, 1, 10, 16))).toEqual({

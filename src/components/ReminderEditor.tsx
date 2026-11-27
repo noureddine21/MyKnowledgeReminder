@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import { FREQUENCY_LABELS, MAX_REPEAT_INTERVAL } from '../constants';
 import { REMINDER_FREQUENCIES, type ReminderFrequency, type ReminderInput } from '../models';
-import { isRepeating, spacedReviewDates } from '../services/reviewSchedule';
+import { isRepeating } from '../services/reviewSchedule';
 import { useAppTheme } from '../theme';
 import { formatDate, formatTime } from '../utils/date';
 import { formatRecurrence, repeatUnit } from '../utils/recurrence';
@@ -10,7 +10,6 @@ import { AppText } from './AppText';
 import { Card } from './Card';
 import { Chip } from './Chip';
 import { DateTimeField } from './DateTimeField';
-import { Icon } from './Icon';
 import { ListRow } from './ListRow';
 
 import { tr } from '../i18n';
@@ -18,8 +17,6 @@ interface Props {
   value: ReminderInput;
   onChange: (value: ReminderInput) => void;
   /** Creation date: base of the smart schedule. */
-  createdAt: number;
-  intervals: number[];
   now: number;
   error?: string;
   /** Error for the "every N" field. */
@@ -53,7 +50,7 @@ function describeRepeat(value: ReminderInput): string {
   }
 }
 
-export function ReminderEditor({ value, onChange, createdAt, intervals, now, error, intervalError }: Props) {
+export function ReminderEditor({ value, onChange, now, error, intervalError }: Props) {
   const { colors, radius, spacing, typography } = useAppTheme();
   const set = (patch: Partial<ReminderInput>) => onChange({ ...value, ...patch });
 
@@ -100,27 +97,6 @@ export function ReminderEditor({ value, onChange, createdAt, intervals, now, err
                 value={value.scheduledAt}
                 onChange={scheduledAt => set({ scheduledAt })}
               />
-              <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Review dates (days after creation: ')}{intervals.join(', ')})
-              </AppText>
-              {spacedReviewDates(createdAt, intervals, value.scheduledAt).map((date, index) => {
-                const past = date <= now;
-                return (
-                  <View key={index} style={[styles.dateRow, { marginBottom: spacing.xs }]}>
-                    <Icon
-                      name={past ? 'checkbox-blank-circle-outline' : 'circle-medium'}
-                      size={16}
-                      color={past ? colors.textMuted : colors.primary}
-                    />
-                    <AppText
-                      variant="small"
-                      tone={past ? 'muted' : 'default'}
-                      style={[styles.dateText, past && styles.past]}
-                    >{tr('Review ')}{index + 1}: {formatDate(date)}{' '}{tr('at')}{' '}{formatTime(date)}
-                    </AppText>
-                  </View>
-                );
-              })}
-              <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>{tr('Past dates are skipped. Customize intervals in Settings → Reminder settings.')}</AppText>
             </>
           ) : (
             <>
@@ -187,7 +163,4 @@ const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
   everyRow: { flexDirection: 'row', alignItems: 'center' },
   everyInput: { borderWidth: 1, minWidth: 64, minHeight: 44, paddingVertical: 8, textAlign: 'center' },
-  dateRow: { flexDirection: 'row', alignItems: 'center' },
-  dateText: { marginLeft: 6 },
-  past: { textDecorationLine: 'line-through' },
 });

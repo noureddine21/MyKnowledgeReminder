@@ -13,7 +13,6 @@ import { NotFoundError } from '../utils/errors';
 import { assertValidInformation } from '../utils/validation';
 import { cancelNotification, notificationIdFor, snoozeNotificationIdFor } from './notificationService';
 import { syncItemNotification } from './reminderSync';
-import { attachTags } from './tagService';
 import { getNextReminderAt, initialSpacedSchedule, isDueToday, isRepeating } from './reviewSchedule';
 import { findMostSimilar } from './similarity';
 import { deleteAppFile } from '../native/mkrNative';
@@ -120,9 +119,6 @@ export async function saveInformation(
     } else {
       itemId = await tx.information.insert(input, now, position);
     }
-    if (input.tagIds !== undefined) {
-      await tx.tags.setForItem(itemId, input.tagIds);
-    }
 
     if (reminderInput.enabled) {
       const data: ReminderData =
@@ -198,7 +194,7 @@ export async function getMasteryCounts(): Promise<number[]> {
 export async function getInformation(id: number): Promise<InformationItem | null> {
   const repos = await getRepositories();
   const item = await repos.information.findById(id);
-  return item ? (await attachTags([item]))[0] : null;
+  return item;
 }
 
 export async function getReviewHistory(id: number): Promise<ReviewHistoryEntry[]> {
@@ -232,16 +228,13 @@ export async function listInformation(
   now: number = Date.now(),
 ): Promise<InformationItem[]> {
   const repos = await getRepositories();
-  let items = await attachTags(
-    await repos.information.findAll({
+  let items = await repos.information.findAll({
       search: query.search,
       categoryId: query.categoryId,
-      tagId: query.tagId,
       collectionId: query.collectionId,
       status: query.status,
       sort: query.sort,
-    }),
-  );
+    });
   if (query.status === 'due') {
     items = items.filter(item => item.reminder !== null && isDueToday(item.reminder, now));
   }

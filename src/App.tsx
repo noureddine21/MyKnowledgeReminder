@@ -8,7 +8,7 @@ import type { AppSettings } from './models';
 import { RootNavigator } from './navigation/RootNavigator';
 import { consumeInitialNotification, subscribeToForegroundNotifications } from './services/notificationEvents';
 import { ensureChannel } from './services/notificationService';
-import { scheduleDailyItems } from './services/dailyItemService';
+import { cancelDailyItemNotifications } from './services/dailyItemService';
 import { applyPlannerSettings } from './services/planService';
 import { refreshWidget } from './services/widgetService';
 import { applyLanguage } from './i18n/apply';
@@ -54,8 +54,8 @@ async function runStartupTasks(): Promise<void> {
     logError('startup:resync', error);
   }
   try {
-    // Item of the day: next 7 days, refreshed at each start.
-    await scheduleDailyItems();
+    // The morning "item of the day" notification was removed: clean up old ones.
+    await cancelDailyItemNotifications();
   } catch (error) {
     logError('startup:daily-item', error);
   }

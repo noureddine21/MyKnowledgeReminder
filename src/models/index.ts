@@ -99,19 +99,6 @@ export interface ReviewHistoryEntry {
 export interface InformationItem extends Information {
   category: Category | null;
   reminder: Reminder | null;
-  /** Loaded by the service layer (empty when not loaded). */
-  tags?: Tag[];
-}
-
-/** Free tag for finer organization ("#tafsir", "#exam"…); an item can have several. */
-export interface Tag {
-  id: number;
-  name: string;
-  color: string;
-}
-
-export interface TagWithCount extends Tag {
-  itemCount: number;
 }
 
 /** Fields the user edits in the Add / Edit form. */
@@ -121,8 +108,6 @@ export interface InformationInput {
   categoryId: number | null;
   source: string | null;
   createdAt: number;
-  /** When provided, replaces the item's tags. */
-  tagIds?: number[];
   question?: string | null;
   isFavorite?: boolean;
   imagePath?: string | null;
@@ -182,10 +167,6 @@ export interface AppSettings {
   planPrayerCity: string | null;
   /** Minutes kept free from each prayer time (Jumu'ah: at least 60). */
   planPrayerMinutes: number;
-  /** "Item of the day" notification: on/off, time ("HH:mm") and which items. */
-  dailyItemEnabled: boolean;
-  dailyItemTime: string;
-  dailyItemSource: 'all' | 'faith';
   /** Small reminders during work hours (keys of WORK_NUDGES: water, walk...), cycled. */
   planWorkNudges: string[];
   planWorkNudgeEveryMin: number;
@@ -241,7 +222,6 @@ export type InformationStatus = 'all' | 'favorites' | 'due' | MasteryLevel;
 export interface InformationQuery {
   search?: string;
   categoryId?: number | null;
-  tagId?: number | null;
   collectionId?: number | null;
   status?: InformationStatus;
   sort?: SortOption;

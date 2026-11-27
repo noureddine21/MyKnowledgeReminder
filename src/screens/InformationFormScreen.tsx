@@ -11,7 +11,6 @@ import {
   LoadingView,
   ReminderEditor,
   Screen,
-  TagPicker,
   TextField,
   VoiceNoteRecorder,
 } from '../components';
@@ -42,7 +41,6 @@ interface FormState {
   isFavorite: boolean;
   categoryId: number | null;
   collectionId: number | null;
-  tagIds: number[];
   source: string;
   imagePath: string | null;
   audioPath: string | null;
@@ -59,7 +57,6 @@ function emptyForm(settings: AppSettings): FormState {
     isFavorite: false,
     categoryId: null,
     collectionId: null,
-    tagIds: [],
     source: '',
     imagePath: null,
     audioPath: null,
@@ -82,7 +79,6 @@ function formFromItem(item: InformationItem, settings: AppSettings): FormState {
     isFavorite: item.isFavorite,
     categoryId: item.categoryId,
     collectionId: item.collectionId,
-    tagIds: (item.tags ?? []).map(t => t.id),
     source: item.source ?? '',
     imagePath: item.imagePath,
     audioPath: item.audioPath,
@@ -268,7 +264,6 @@ function InformationForm({ informationId, onSaved, onOpenExisting, shared, share
           title: form.title,
           content: form.content,
           categoryId: form.categoryId,
-          tagIds: form.tagIds,
           source: form.source.trim() || null,
           createdAt: form.createdAt,
           question: form.question.trim() || null,
@@ -498,11 +493,6 @@ function InformationForm({ informationId, onSaved, onOpenExisting, shared, share
       ) : null}
       <View style={{ marginBottom: spacing.lg }} />
 
-      <AppText variant="caption" tone="secondary" style={{ marginBottom: spacing.sm }}>{tr('Tags')}</AppText>
-      <View style={{ marginBottom: spacing.lg }}>
-        <TagPicker selectedIds={form.tagIds} onChange={ids => update('tagIds', ids)} />
-      </View>
-
       <TextField
         label={tr('Source / reference')}
         value={form.source}
@@ -551,8 +541,6 @@ function InformationForm({ informationId, onSaved, onOpenExisting, shared, share
       <ReminderEditor
         value={form.reminder}
         onChange={value => update('reminder', value)}
-        createdAt={form.createdAt}
-        intervals={settings.reviewIntervals}
         now={Date.now()}
         error={errors.reminder}
         intervalError={errors.repeatInterval}

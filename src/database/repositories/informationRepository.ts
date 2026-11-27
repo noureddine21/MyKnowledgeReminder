@@ -24,7 +24,6 @@ export function escapeLike(value: string): string {
 export interface InformationFilter {
   search?: string;
   categoryId?: number | null;
-  tagId?: number | null;
   collectionId?: number | null;
   /** 'due' is applied by the service layer (needs the schedule logic). */
   status?: InformationStatus;
@@ -81,10 +80,6 @@ export class InformationRepository {
       if (typeof filter.categoryId === 'number') {
         where.push('i.category_id = ?');
         params.push(filter.categoryId);
-      }
-      if (typeof filter.tagId === 'number') {
-        where.push('i.id IN (SELECT information_id FROM information_tags WHERE tag_id = ?)');
-        params.push(filter.tagId);
       }
       if (typeof filter.collectionId === 'number') {
         where.push('i.collection_id = ?');

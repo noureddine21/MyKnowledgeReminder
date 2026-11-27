@@ -99,7 +99,7 @@ export function DashboardScreen({ navigation }: TabScreenProps<'Home'>) {
   const goal = settings.dailyGoal;
   const goalProgress = goal > 0 ? Math.min(1, data.reviewedToday / goal) : 0;
   const goalReached = goal > 0 && data.reviewedToday >= goal;
-  const itemOfTheDay = pickItemOfTheDay(data.items, settings.dailyItemSource, data.now);
+  const itemOfTheDay = pickItemOfTheDay(data.items, data.now);
   const tasks = data.plan?.tasks ?? [];
   const done = tasks.filter(t => t.isDone).length;
   const upcomingTasks = tasks

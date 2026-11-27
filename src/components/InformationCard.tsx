@@ -46,11 +46,6 @@ export function InformationCard({ item, now, onPress, footer }: Props) {
       <AppText tone="secondary" numberOfLines={2} style={{ marginTop: spacing.xs }}>
         {item.content}
       </AppText>
-      {item.tags && item.tags.length > 0 ? (
-        <AppText variant="caption" color={colors.accentStrong} numberOfLines={1} style={{ marginTop: spacing.xs }}>
-          {item.tags.map(tag => `#${tag.name}`).join('  ')}
-        </AppText>
-      ) : null}
       {footer ?? (
         <View style={[styles.footer, { marginTop: spacing.sm }]}>
           <Icon

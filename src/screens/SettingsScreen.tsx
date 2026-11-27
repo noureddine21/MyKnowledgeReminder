@@ -7,7 +7,6 @@ import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
 import type { AppSettings, ThemeMode } from '../models';
 import type { RootStackScreenProps } from '../navigation/types';
-import { scheduleDailyItems } from '../services/dailyItemService';
 import { applyLanguage } from '../i18n/apply';
 import {
   canScheduleExactAlarms,
@@ -160,28 +159,11 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
       await update('language', language);
       // Notification texts are written in the chosen language.
       await applyPlannerSettings();
-      await scheduleDailyItems();
       if (restartNeeded) {
         Alert.alert(tr('Restart needed'), tr('Close and reopen the app to switch the layout direction.'));
       }
     } catch (e) {
       handleError(e, 'settings:language');
-    }
-  };
-
-  /** Saves an "item of the day" setting and reschedules the next 7 days. */
-  const updateDaily = async <K extends 'dailyItemEnabled' | 'dailyItemTime' | 'dailyItemSource'>(
-    key: K,
-    value: AppSettings[K],
-  ) => {
-    try {
-      await update(key, value);
-      if (value === true) {
-        await ensurePermission();
-      }
-      await scheduleDailyItems();
-    } catch (e) {
-      handleError(e, `settings:${key}`);
     }
   };
 
@@ -563,43 +545,6 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
             onPress={testAlarm}
           />
         ) : null}
-      </Card>
-
-      <SectionHeader title={tr('Item of the day')} />
-      <Card>
-        <ListRow
-          icon="book-open-variant"
-          title={tr('Morning inspiration')}
-          subtitle={tr('One item of your library every morning')}
-          switchValue={settings.dailyItemEnabled}
-          onSwitchChange={value => updateDaily('dailyItemEnabled', value)}
-        />
-        <ListRow
-          icon="clock-outline"
-          title={tr('Time')}
-          value={settings.dailyItemTime}
-          disabled={!settings.dailyItemEnabled}
-          onPress={async () => {
-            const picked = await pickTime(applyTimeString(Date.now(), settings.dailyItemTime));
-            if (picked !== null) {
-              await updateDaily('dailyItemTime', toTimeString(picked));
-            }
-          }}
-        />
-        <View style={[styles.wrap, { marginTop: spacing.sm }]}>
-          <Chip
-            label={tr('All my items')}
-            icon="bookshelf"
-            selected={settings.dailyItemSource === 'all'}
-            onPress={() => updateDaily('dailyItemSource', 'all')}
-          />
-          <Chip
-            label={tr('Quran & Hadith')}
-            icon="book-open-page-variant"
-            selected={settings.dailyItemSource === 'faith'}
-            onPress={() => updateDaily('dailyItemSource', 'faith')}
-          />
-        </View>
       </Card>
 
       <SectionHeader title={tr('About')} />

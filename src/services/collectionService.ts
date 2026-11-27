@@ -5,9 +5,11 @@
 import { getRepositories, inTransaction } from '../database/repositories';
 import type { Collection, CollectionWithProgress } from '../models';
 import { ValidationError } from '../utils/errors';
-import { TAG_COLORS } from './tagService';
 
 export const MAX_COLLECTION_NAME_LENGTH = 40;
+
+/** Calm palette that fits the emerald & gold theme. */
+export const COLLECTION_COLORS = ['#0B4A3A', '#A87A12', '#2F6F8F', '#8E3B5E', '#4C6A2E', '#6B4FA0', '#B4532A', '#3D5A80'];
 
 export function validateCollectionName(raw: string): string | null {
   const name = raw.trim();
@@ -38,7 +40,7 @@ export async function createCollection(rawName: string, now: number = Date.now()
   const name = rawName.trim();
   const repos = await getRepositories();
   const count = (await repos.collections.findAllWithProgress()).length;
-  const color = TAG_COLORS[(count + 3) % TAG_COLORS.length];
+  const color = COLLECTION_COLORS[count % COLLECTION_COLORS.length];
   const id = await repos.collections.create(name, color, now);
   return { id, name, color, createdAt: now };
 }
