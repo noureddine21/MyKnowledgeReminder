@@ -4,4 +4,8 @@
     <string name="widget_title">My day</string>
     <string name="widget_empty">Open the app to plan your day</string>
     <string name="widget_description">Next tasks of the day and items to review</string>
+    <string name="alarm_open">Open</string>
+    <string name="alarm_stop">Stop</string>
+    <string name="alarm_channel">Ringing alarms</string>
+    <string name="alarm_channel_description">Alarm reminders that ring until you answer</string>
 </resources>

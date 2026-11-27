@@ -3,6 +3,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Alarm mode: full-screen reminder over the lock screen (user can revoke on Android 14+). -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <!-- Real alarms (alarm clock API), ringing service and restore after reboot. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
       android:name=".MainApplication"
@@ -37,6 +45,19 @@
             <data android:mimeType="image/*" />
         </intent-filter>
       </activity>
+
+      <receiver android:name=".AlarmReceiver" android:exported="false">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+        </intent-filter>
+      </receiver>
+      <service
+        android:name=".AlarmService"
+        android:exported="false"
+        android:foregroundServiceType="mediaPlayback" />
 
       <receiver
         android:name=".MkrWidgetProvider"

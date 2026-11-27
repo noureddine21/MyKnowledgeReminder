@@ -24,14 +24,45 @@ class MainActivity : ReactActivity() {
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    convertAlarmIntent(intent)
     convertShareIntent(intent)
     // null: react-native-screens must not restore fragments after process death.
     super.onCreate(null)
   }
 
   override fun onNewIntent(intent: Intent) {
+    convertAlarmIntent(intent)
     convertShareIntent(intent)
     super.onNewIntent(intent)
+  }
+
+  /**
+   * Opened by a ringing alarm: show over the lock screen, turn the screen on, and hand the
+   * alarm to JavaScript as myknowledgereminder://alarm?... (opens the Alarm screen).
+   */
+  private fun convertAlarmIntent(intent: Intent?) {
+    if (intent == null || !intent.getBooleanExtra(AlarmService.EXTRA_IS_ALARM, false)) return
+    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O_MR1) {
+      setShowWhenLocked(true)
+      setTurnScreenOn(true)
+    } else {
+      @Suppress("DEPRECATION")
+      window.addFlags(
+          android.view.WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+              android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON)
+    }
+    val builder = Uri.Builder().scheme("myknowledgereminder").authority("alarm")
+    intent.getStringExtra(AlarmScheduler.EXTRA_ALARM_ID)?.let { builder.appendQueryParameter("alarmId", it) }
+    intent.getIntExtra(AlarmService.EXTRA_INFORMATION_ID, -1).takeIf { it > 0 }?.let {
+      builder.appendQueryParameter("informationId", it.toString())
+    }
+    intent.getIntExtra(AlarmService.EXTRA_PLAN_TASK_ID, -1).takeIf { it > 0 }?.let {
+      builder.appendQueryParameter("planTaskId", it.toString())
+    }
+    intent.removeExtra(AlarmService.EXTRA_IS_ALARM)
+    intent.action = Intent.ACTION_VIEW
+    intent.data = builder.build()
+    setIntent(intent)
   }
 
   /**

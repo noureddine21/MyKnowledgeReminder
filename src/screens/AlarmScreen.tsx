@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText, Icon, LoadingView } from '../components';
 import { tr } from '../i18n';
 import type { InformationItem, PlanTask } from '../models';
-import { setShowWhenLocked } from '../native/mkrNative';
+import { setShowWhenLocked, stopAlarmSound } from '../native/mkrNative';
 import type { RootStackScreenProps } from '../navigation/types';
 import { formatDuration } from '../services/dayPlanner';
 import { getInformation } from '../services/informationService';
@@ -15,6 +15,8 @@ import { getPlanTask, setPlanTaskDone, snoozePlanTask } from '../services/planSe
 import { arabicTextStyle, fonts, useAppTheme, withAlpha } from '../theme';
 import { formatTime } from '../utils/date';
 import { describeError, logError } from '../utils/errors';
+
+export const TEST_ALARM_ID = 'test-alarm';
 
 type Loaded = { kind: 'item'; item: InformationItem } | { kind: 'task'; task: PlanTask } | { kind: 'missing' };
 
@@ -77,6 +79,7 @@ export function AlarmScreen({ route, navigation }: RootStackScreenProps<'Alarm'>
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
+      await stopAlarmSound();
       await action();
       close();
     } catch (e) {
@@ -146,7 +149,15 @@ export function AlarmScreen({ route, navigation }: RootStackScreenProps<'Alarm'>
             },
           ];
 
-  const title = loaded.kind === 'item' ? loaded.item.title : loaded.kind === 'task' ? loaded.task.title : tr('Information not found');
+  const isTest = notificationId === TEST_ALARM_ID;
+  const title =
+    loaded.kind === 'item'
+      ? loaded.item.title
+      : loaded.kind === 'task'
+        ? loaded.task.title
+        : isTest
+          ? tr('The alarm works ✓')
+          : tr('Information not found');
   const kicker = loaded.kind === 'task' ? tr('TIME FOR') : tr('TIME TO REVIEW');
 
   return (

@@ -8,7 +8,7 @@
  */
 import { Linking } from 'react-native';
 import { MAX_CONTENT_LENGTH, MAX_SOURCE_LENGTH, MAX_TITLE_LENGTH } from '../constants';
-import { openSharedDraft } from '../navigation/navigationRef';
+import { openAlarm, openSharedDraft } from '../navigation/navigationRef';
 import { recognizeText } from '../native/mkrNative';
 import { logError } from '../utils/errors';
 
@@ -137,7 +137,36 @@ export function buildDraftFromShare(text: string, subject: string | null = null)
 }
 
 /** Opens the Add form with a draft when `url` is a share link. Returns true if handled. */
+/** myknowledgereminder://alarm?informationId=..&planTaskId=..&alarmId=.. (set by MainActivity). */
+export function parseAlarmUrl(
+  url: string | null | undefined,
+): { informationId?: number; planTaskId?: number; notificationId?: string } | null {
+  if (!url || !url.toLowerCase().startsWith('myknowledgereminder://alarm')) {
+    return null;
+  }
+  const params: Record<string, string> = {};
+  for (const pair of (url.split('?')[1] ?? '').split('&')) {
+    const [key, ...rest] = pair.split('=');
+    if (key) {
+      params[key] = decodeURIComponent(rest.join('='));
+    }
+  }
+  const informationId = Number(params.informationId);
+  const planTaskId = Number(params.planTaskId);
+  const result = {
+    informationId: Number.isInteger(informationId) && informationId > 0 ? informationId : undefined,
+    planTaskId: Number.isInteger(planTaskId) && planTaskId > 0 ? planTaskId : undefined,
+    notificationId: params.alarmId || undefined,
+  };
+  return result.informationId || result.planTaskId || result.notificationId ? result : null;
+}
+
 export function handleIncomingUrl(url: string | null | undefined): boolean {
+  const alarm = parseAlarmUrl(url);
+  if (alarm) {
+    openAlarm(alarm);
+    return true;
+  }
   const image = parseSharedImage(url);
   if (image) {
     openImageDraft(image);

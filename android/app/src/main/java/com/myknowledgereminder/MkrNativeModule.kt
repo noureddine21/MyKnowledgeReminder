@@ -167,6 +167,80 @@ class MkrNativeModule(private val context: ReactApplicationContext) :
     }
   }
 
+  /** Schedules a real alarm (alarm clock API). `spec`: id, at, title, body, informationId, planTaskId, repeatMs. */
+  @ReactMethod
+  fun scheduleAlarm(spec: com.facebook.react.bridge.ReadableMap, promise: Promise) {
+    try {
+      val alarm = AlarmSpec(
+          id = spec.getString("id") ?: return promise.reject(E_UNAVAILABLE, "Missing id."),
+          at = spec.getDouble("at").toLong(),
+          title = spec.getString("title") ?: "",
+          body = spec.getString("body") ?: "",
+          informationId = if (spec.hasKey("informationId") && !spec.isNull("informationId")) spec.getInt("informationId") else null,
+          planTaskId = if (spec.hasKey("planTaskId") && !spec.isNull("planTaskId")) spec.getInt("planTaskId") else null,
+          repeatMs = if (spec.hasKey("repeatMs")) spec.getDouble("repeatMs").toLong() else 0L,
+      )
+      AlarmScheduler.schedule(context, alarm)
+      promise.resolve(AlarmScheduler.canScheduleExact(context))
+    } catch (e: Exception) {
+      promise.reject(E_UNAVAILABLE, e.message ?: "The alarm could not be scheduled.", e)
+    }
+  }
+
+  @ReactMethod
+  fun cancelAlarm(id: String, promise: Promise) {
+    AlarmScheduler.cancel(context, id)
+    promise.resolve(null)
+  }
+
+  @ReactMethod
+  fun cancelAlarmsWithPrefix(prefix: String, promise: Promise) {
+    AlarmScheduler.cancelWithPrefix(context, prefix)
+    promise.resolve(null)
+  }
+
+  /** Stops the ringing (sound, vibration, alarm notification). */
+  @ReactMethod
+  fun stopAlarmSound(promise: Promise) {
+    AlarmService.stop(context)
+    promise.resolve(null)
+  }
+
+  @ReactMethod
+  fun canScheduleExactAlarms(promise: Promise) {
+    promise.resolve(AlarmScheduler.canScheduleExact(context))
+  }
+
+  /** Xiaomi / MIUI: opens Autostart or the app's "Other permissions" page (lock screen, pop-ups). */
+  @ReactMethod
+  fun openVendorSettings(page: String, promise: Promise) {
+    val pkg = context.packageName
+    val candidates = when (page) {
+      "autostart" -> listOf(
+          Intent().setClassName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"),
+          Intent("miui.intent.action.OP_AUTO_START").addCategory(Intent.CATEGORY_DEFAULT),
+      )
+      else -> listOf(
+          Intent("miui.intent.action.APP_PERM_EDITOR")
+              .setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.PermissionsEditorActivity")
+              .putExtra("extra_pkgname", pkg),
+          Intent("miui.intent.action.APP_PERM_EDITOR")
+              .setClassName("com.miui.securitycenter", "com.miui.permcenter.permissions.AppPermissionsEditorActivity")
+              .putExtra("extra_pkgname", pkg),
+      )
+    } + Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$pkg"))
+    for (intent in candidates) {
+      try {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+        return promise.resolve(true)
+      } catch (_: Exception) {
+        // Try the next one (different MIUI / HyperOS versions).
+      }
+    }
+    promise.resolve(false)
+  }
+
   @ReactMethod
   fun updateWidget(snapshotJson: String, promise: Promise) {
     try {

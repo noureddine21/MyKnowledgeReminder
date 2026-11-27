@@ -10,6 +10,7 @@ import notifee, {
 } from 'react-native-notify-kit';
 import { ALARM_CHANNEL_NAME, NOTIFICATION_CHANNEL_ID, NOTIFICATION_CHANNEL_NAME } from '../../constants';
 import { ALARM_CHANNEL, alarmOptions } from './alarm';
+import { cancelNativeAlarm, isNativeAvailable, scheduleNativeAlarm } from '../../native/mkrNative';
 import type { Reminder } from '../../models';
 import { AppError, logError } from '../../utils/errors';
 import { getNotificationTimestamp } from '../reviewSchedule';
@@ -50,6 +51,31 @@ export function ensureChannel(): Promise<void> {
       });
   }
   return channelReady;
+}
+
+const HOUR_MS = 3_600_000;
+
+/** Fixed repeat period for native alarms (monthly is re-armed by the app at each start). */
+export function repeatMsFor(reminder: Reminder): number {
+  const n = reminder.repeatInterval || 1;
+  switch (reminder.frequency) {
+    case 'hourly':
+      return n * HOUR_MS;
+    case 'daily':
+      return n * 24 * HOUR_MS;
+    case 'weekly':
+      return n * 7 * 24 * HOUR_MS;
+    default:
+      return 0;
+  }
+}
+
+async function cancelTriggerOnly(notificationId: string): Promise<void> {
+  try {
+    await notifee.cancelNotification(notificationId);
+  } catch (error) {
+    logError('notifications:cancel', error);
+  }
 }
 
 function repeatFrequencyFor(reminder: Reminder): RepeatFrequency | undefined {
@@ -175,6 +201,21 @@ export async function scheduleReminderNotification(
     return null;
   }
 
+  if (target.alarm && isNativeAvailable()) {
+    // Real alarm (alarm clock API + ringing service): the most reliable on Xiaomi & co.
+    await cancelTriggerOnly(notificationId);
+    const message = buildReminderMessage(target.title, target.categoryName);
+    await scheduleNativeAlarm({
+      id: notificationId,
+      at: timestamp,
+      title: message.title,
+      body: message.body,
+      informationId: target.informationId,
+      repeatMs: repeatMsFor(target.reminder),
+    });
+    return notificationId;
+  }
+  await cancelNativeAlarm(notificationId);
   await createTrigger(
     buildReminderNotification(target, notificationId),
     timestamp,
@@ -191,6 +232,17 @@ export async function snoozeReminderNotification(
   now: number = Date.now(),
 ): Promise<number> {
   const at = now + minutes * 60_000;
+  if (target.alarm && isNativeAvailable()) {
+    const message = buildReminderMessage(target.title, target.categoryName);
+    await scheduleNativeAlarm({
+      id: snoozeNotificationIdFor(target.informationId),
+      at,
+      title: message.title,
+      body: message.body,
+      informationId: target.informationId,
+    });
+    return at;
+  }
   await createTrigger(
     buildReminderNotification(target, snoozeNotificationIdFor(target.informationId)),
     at,
@@ -215,6 +267,7 @@ export async function cancelNotification(notificationId: string): Promise<void> 
   } catch (error) {
     logError('notifications:cancel', error);
   }
+  await cancelNativeAlarm(notificationId);
 }
 
 export async function getScheduledNotificationIds(): Promise<string[]> {

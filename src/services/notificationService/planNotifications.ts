@@ -9,6 +9,7 @@ import type { PlanTask } from '../../models';
 import { formatTime } from '../../utils/date';
 import { logError } from '../../utils/errors';
 import { alarmOptions } from './alarm';
+import { cancelNativeAlarmsWithPrefix, isNativeAvailable, scheduleNativeAlarm } from '../../native/mkrNative';
 import { cancelNotification, createTrigger, getScheduledNotificationIds } from './scheduler';
 
 import { tr, trn } from '../../i18n';
@@ -79,6 +80,16 @@ export async function schedulePlanTaskNotification(task: PlanTask): Promise<void
     return;
   }
   const minutes = Math.round((task.endAt - task.startAt) / 60_000);
+  if (task.alarm && isNativeAvailable()) {
+    await scheduleNativeAlarm({
+      id: planTaskNotificationId(task.id),
+      at: task.startAt,
+      title: `${task.important ? '⭐ ' : ''}${tr('Now: {title}', { title: task.title })}`,
+      body: `${formatTime(task.startAt)} – ${formatTime(task.endAt)} (${minutes} min)`,
+      planTaskId: task.id,
+    });
+    return;
+  }
   await createTrigger(
     {
       id: planTaskNotificationId(task.id),
@@ -133,6 +144,7 @@ export async function scheduleEveningSummary(remaining: number, at: number, now:
 
 /** Cancels every pending task notification of the planner (keeps the morning reminder). */
 export async function cancelPlanTaskNotifications(): Promise<void> {
+  await cancelNativeAlarmsWithPrefix(PLAN_TASK_PREFIX);
   const ids = await getScheduledNotificationIds();
   for (const id of ids) {
     if (id.startsWith(PLAN_TASK_PREFIX)) {

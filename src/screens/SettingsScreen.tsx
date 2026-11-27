@@ -9,7 +9,17 @@ import type { AppSettings, ThemeMode } from '../models';
 import type { RootStackScreenProps } from '../navigation/types';
 import { scheduleDailyItems } from '../services/dailyItemService';
 import { applyLanguage } from '../i18n/apply';
-import { canUseFullScreenIntent, openFullScreenIntentSettings } from '../native/mkrNative';
+import {
+  canScheduleExactAlarms,
+  canUseFullScreenIntent,
+  isNativeAvailable,
+  isXiaomiDevice,
+  openFullScreenIntentSettings,
+  openVendorSettings,
+  scheduleNativeAlarm,
+} from '../native/mkrNative';
+import { TEST_ALARM_ID } from './AlarmScreen';
+import { openBatteryOptimizationSettings, openExactAlarmSettings } from '../services/notificationService';
 import { applyPlannerSettings } from '../services/planService';
 import {
   DAILY_GOAL_OPTIONS,
@@ -56,11 +66,28 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
   const [cityPickerOpen, setCityPickerOpen] = useState(false);
   const [name, setName] = useState(settings.userName);
   const [fullScreenAllowed, setFullScreenAllowed] = useState(true);
+  const [exactAllowed, setExactAllowed] = useState(true);
   useFocusEffect(
     useCallback(() => {
       canUseFullScreenIntent().then(setFullScreenAllowed);
+      canScheduleExactAlarms().then(setExactAllowed);
     }, []),
   );
+
+  const testAlarm = async () => {
+    try {
+      await ensurePermission();
+      await scheduleNativeAlarm({
+        id: TEST_ALARM_ID,
+        at: Date.now() + 10_000,
+        title: tr('Test alarm'),
+        body: tr('If you see and hear this, alarms work on your phone.'),
+      });
+      Alert.alert(tr('Test alarm'), tr('It will ring in 10 seconds. You can lock the phone now.'));
+    } catch (e) {
+      handleError(e, 'settings:test-alarm');
+    }
+  };
   const prayerCity = findPrayerCity(settings.planPrayerCity);
   const todayPrayers = prayerCity ? prayerBlocks(prayerCity, Date.now(), settings.planPrayerMinutes) : [];
 
@@ -396,6 +423,47 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
           subtitle={fullScreenAllowed ? tr('Allowed') : tr('Not allowed — tap to allow it')}
           onPress={() => openFullScreenIntentSettings().catch(e => handleError(e, 'settings:fullscreen'))}
         />
+        <ListRow
+          icon={exactAllowed ? 'clock-check-outline' : 'alert-circle-outline'}
+          iconColor={exactAllowed ? undefined : colors.danger}
+          title={tr('Exact alarms')}
+          subtitle={exactAllowed ? tr('Allowed') : tr('Not allowed — tap to allow it')}
+          onPress={() => openExactAlarmSettings()}
+        />
+        {isXiaomiDevice() ? (
+          <>
+            <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.md, marginBottom: spacing.xs }}>
+              {tr('Xiaomi / Redmi / POCO: allow these 3 settings, otherwise MIUI blocks alarms')}
+            </AppText>
+            <ListRow
+              icon="rocket-launch-outline"
+              title={tr('1. Autostart')}
+              subtitle={tr('Turn ON for My Knowledge Reminder')}
+              onPress={() => openVendorSettings('autostart').catch(e => handleError(e, 'settings:autostart'))}
+            />
+            <ListRow
+              icon="cellphone-lock"
+              title={tr('2. Lock screen & pop-ups')}
+              subtitle={tr('"Show on lock screen" and "Display pop-up windows while running in the background"')}
+              onPress={() => openVendorSettings('permissions').catch(e => handleError(e, 'settings:miui'))}
+            />
+            <ListRow
+              icon="battery-heart-outline"
+              title={tr('3. Battery: no restrictions')}
+              subtitle={tr('Battery saver → No restrictions')}
+              onPress={() => openBatteryOptimizationSettings()}
+            />
+          </>
+        ) : null}
+        {isNativeAvailable() ? (
+          <ListRow
+            icon="bell-ring-outline"
+            iconColor={colors.accentStrong}
+            title={tr('Test the alarm')}
+            subtitle={tr('Rings in 10 seconds')}
+            onPress={testAlarm}
+          />
+        ) : null}
       </Card>
 
       <SectionHeader title={tr('Item of the day')} />
