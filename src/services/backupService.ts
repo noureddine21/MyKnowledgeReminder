@@ -2,6 +2,7 @@
  * Backup & restore: the whole database as one JSON file the user saves wherever they
  * want (Google Drive, Downloads, WhatsApp...) through the Android file picker.
  * Stays offline: the app never uploads anything itself.
+ * Photos and voice notes are files: they are not inside the backup (text only).
  */
 import { getDatabase } from '../database/connection';
 import { getSchemaVersion } from '../database/migrations';
@@ -17,7 +18,9 @@ export const BACKUP_FORMAT = 1;
 /** Insert order (parents first). Tables missing from an older backup are left empty. */
 export const BACKUP_TABLES = [
   'categories',
+  'collections',
   'information',
+  'information_links',
   'tags',
   'information_tags',
   'reminders',

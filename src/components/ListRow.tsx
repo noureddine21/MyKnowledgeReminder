@@ -11,6 +11,7 @@ interface Props {
   subtitle?: string;
   value?: string;
   onPress?: () => void;
+  onLongPress?: () => void;
   /** Renders a switch instead of a chevron. */
   switchValue?: boolean;
   onSwitchChange?: (value: boolean) => void;
@@ -24,6 +25,7 @@ export function ListRow({
   subtitle,
   value,
   onPress,
+  onLongPress,
   switchValue,
   onSwitchChange,
   disabled,
@@ -34,6 +36,7 @@ export function ListRow({
   return (
     <Pressable
       onPress={hasSwitch ? () => onSwitchChange?.(!switchValue) : onPress}
+      onLongPress={onLongPress}
       disabled={disabled || (!onPress && !hasSwitch)}
       accessibilityRole={hasSwitch ? 'switch' : 'button'}
       accessibilityState={hasSwitch ? { checked: switchValue, disabled } : { disabled }}

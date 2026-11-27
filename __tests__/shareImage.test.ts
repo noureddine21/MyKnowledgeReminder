@@ -42,6 +42,8 @@ describe('shared screenshots (OCR)', () => {
     jest.spyOn(console, 'error').mockImplementation(() => {});
     handleIncomingUrl(imageUrl('content://media/2'));
     await flush();
-    expect(openSharedDraft).toHaveBeenCalledWith({ title: 'Screenshot', content: '', source: null, origin: 'image' });
+    expect(openSharedDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Screenshot', content: '', source: null, origin: 'image', imageUri: expect.any(String) }),
+    );
   });
 });

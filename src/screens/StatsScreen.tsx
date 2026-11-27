@@ -1,6 +1,8 @@
 import React, { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AppText, Card, ErrorView, Icon, LoadingView, Screen, SectionHeader } from '../components';
+import { AppText, Card, ErrorView, Icon, LoadingView, ProgressBar, Screen, SectionHeader } from '../components';
+import { getMasteryCounts } from '../services/informationService';
+import { MASTERY_ICONS, MASTERY_LABELS } from '../services/mastery';
 import { useFocusData } from '../hooks/useFocusData';
 import { getStats } from '../services/statsService';
 import { useAppTheme, withAlpha } from '../theme';
@@ -44,7 +46,10 @@ function Tile({ icon, value, label, color }: { icon: string; value: string; labe
 
 export function StatsScreen() {
   const { colors, radius, spacing } = useAppTheme();
-  const loader = useCallback(() => getStats(), []);
+  const loader = useCallback(async () => {
+    const [base, mastery] = await Promise.all([getStats(), getMasteryCounts()]);
+    return { ...base, mastery };
+  }, []);
   const { data: stats, loading, error, reload } = useFocusData(loader, 'stats:load');
 
   if (!stats) {
@@ -78,6 +83,31 @@ export function StatsScreen() {
           {streakMessage(stats.currentStreak, stats.reviewedToday)}
         </AppText>
       </View>
+
+      <SectionHeader title={tr('Mastery')} />
+      <Card>
+        {(['new', 'learning', 'known', 'mastered'] as const).map(level => {
+          const count =
+            level === 'new'
+              ? stats.mastery[0]
+              : level === 'learning'
+                ? stats.mastery[1] + stats.mastery[2]
+                : level === 'known'
+                  ? stats.mastery[3] + stats.mastery[4]
+                  : stats.mastery[5];
+          const total = Math.max(1, stats.mastery.reduce((a, b) => a + b, 0));
+          return (
+            <View key={level} style={{ marginBottom: spacing.sm }}>
+              <View style={[styles.row, { marginBottom: 4 }]}>
+                <Icon name={MASTERY_ICONS[level]} size={16} color={colors.primary} />
+                <AppText variant="small" style={{ flex: 1, marginLeft: spacing.xs }}>{tr(MASTERY_LABELS[level])}</AppText>
+                <AppText variant="bodyStrong">{count}</AppText>
+              </View>
+              <ProgressBar value={count} total={total} color={level === 'mastered' ? colors.accentStrong : colors.primary} />
+            </View>
+          );
+        })}
+      </Card>
 
       <SectionHeader title={tr('Last 7 days')} />
       <Card>

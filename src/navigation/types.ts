@@ -20,7 +20,15 @@ export type RootStackParamList = {
   ReminderSettings: undefined;
   Backup: undefined;
   Routines: undefined;
-  Quiz: { practice?: boolean } | undefined;
+  /**
+   * practice: random items, nothing rescheduled; minutes: timed session (most urgent first);
+   * collectionId: only the items of a collection, in order.
+   */
+  Quiz: { practice?: boolean; minutes?: number; collectionId?: number } | undefined;
+  Collections: undefined;
+  Collection: { collectionId: number };
+  /** Full-screen reading, swipe from one item to the next. */
+  Reading: { ids: number[]; index?: number; title?: string };
   Stats: undefined;
   Settings: undefined;
   /** Full-screen alarm for a review item or a day-plan task. */

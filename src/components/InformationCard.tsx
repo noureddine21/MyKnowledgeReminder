@@ -8,6 +8,7 @@ import { AppText } from './AppText';
 import { Card } from './Card';
 import { CategoryBadge } from './CategoryBadge';
 import { Icon } from './Icon';
+import { MasteryDots } from './InfoExtras';
 
 import { tr } from '../i18n';
 interface Props {
@@ -26,13 +27,22 @@ export function InformationCard({ item, now, onPress, footer }: Props) {
     <Card onPress={onPress} style={{ marginBottom: spacing.md }} accessibilityLabel={item.title}>
       <View style={styles.header}>
         <CategoryBadge category={item.category} />
-        <AppText variant="caption" tone="muted">
-          {formatDate(item.createdAt)}
-        </AppText>
+        <View style={styles.meta}>
+          {item.imagePath ? <Icon name="image-outline" size={15} color={colors.textMuted} /> : null}
+          {item.audioPath ? <Icon name="microphone-outline" size={15} color={colors.textMuted} /> : null}
+          {item.question ? <Icon name="cards-outline" size={15} color={colors.textMuted} /> : null}
+          <AppText variant="caption" tone="muted" style={styles.date}>
+            {formatDate(item.createdAt)}
+          </AppText>
+        </View>
       </View>
-      <AppText variant="h3" numberOfLines={2} style={{ marginTop: spacing.sm }}>
-        {item.title}
-      </AppText>
+      <View style={[styles.titleRow, { marginTop: spacing.sm }]}>
+        <AppText variant="h3" numberOfLines={2} style={styles.title}>
+          {item.isFavorite ? '⭐ ' : ''}
+          {item.title}
+        </AppText>
+        <MasteryDots mastery={item.mastery} size={6} />
+      </View>
       <AppText tone="secondary" numberOfLines={2} style={{ marginTop: spacing.xs }}>
         {item.content}
       </AppText>
@@ -61,4 +71,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   footer: { flexDirection: 'row', alignItems: 'center' },
   footerText: { marginLeft: 6 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  date: { marginLeft: 2 },
+  titleRow: { flexDirection: 'row', alignItems: 'center' },
+  title: { flex: 1, marginRight: 8 },
 });

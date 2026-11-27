@@ -35,6 +35,33 @@ export interface Information {
   source: string | null;
   createdAt: number;
   updatedAt: number;
+  /** Flashcard question shown before the answer (content); null = use the title. */
+  question: string | null;
+  isFavorite: boolean;
+  /** 0 = new, 1–2 = learning, 3–4 = known, 5 = mastered. */
+  mastery: number;
+  /** file:// paths in the app's private storage. */
+  imagePath: string | null;
+  audioPath: string | null;
+  collectionId: number | null;
+  /** Order inside the collection (1, 2, 3…). */
+  collectionPosition: number | null;
+}
+
+export type MasteryLevel = 'new' | 'learning' | 'known' | 'mastered';
+
+/** Ordered series of items, e.g. "40 Hadith Nawawi". */
+export interface Collection {
+  id: number;
+  name: string;
+  color: string;
+  createdAt: number;
+}
+
+export interface CollectionWithProgress extends Collection {
+  itemCount: number;
+  /** Items at mastery ≥ 3. */
+  learnedCount: number;
 }
 
 export interface Reminder {
@@ -96,6 +123,12 @@ export interface InformationInput {
   createdAt: number;
   /** When provided, replaces the item's tags. */
   tagIds?: number[];
+  question?: string | null;
+  isFavorite?: boolean;
+  imagePath?: string | null;
+  audioPath?: string | null;
+  /** Moving to another collection puts the item at its end. */
+  collectionId?: number | null;
 }
 
 /** Reminder configuration chosen in the form. */
@@ -202,10 +235,15 @@ export interface DayPlan {
 
 export type SortOption = 'createdDesc' | 'createdAsc' | 'nextReminder';
 
+/** Library filter on favorites, due items and mastery. */
+export type InformationStatus = 'all' | 'favorites' | 'due' | MasteryLevel;
+
 export interface InformationQuery {
   search?: string;
   categoryId?: number | null;
   tagId?: number | null;
+  collectionId?: number | null;
+  status?: InformationStatus;
   sort?: SortOption;
 }
 

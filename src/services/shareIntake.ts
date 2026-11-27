@@ -18,6 +18,8 @@ export interface SharedDraft {
   source: string | null;
   /** 'image' when the text was read from a shared screenshot (OCR). */
   origin?: 'text' | 'image';
+  /** Shared screenshot (content://), kept as the item's photo. */
+  imageUri?: string;
 }
 
 const SHARE_PREFIX = 'myknowledgereminder://share';
@@ -74,10 +76,10 @@ export function buildDraftFromImageText(text: string): SharedDraft {
 
 async function openImageDraft(uri: string): Promise<void> {
   try {
-    openSharedDraft(buildDraftFromImageText(await recognizeText(uri)));
+    openSharedDraft({ ...buildDraftFromImageText(await recognizeText(uri)), imageUri: uri });
   } catch (error) {
     logError('share:ocr', error);
-    openSharedDraft({ title: 'Screenshot', content: '', source: null, origin: 'image' });
+    openSharedDraft({ title: 'Screenshot', content: '', source: null, origin: 'image', imageUri: uri });
   }
 }
 

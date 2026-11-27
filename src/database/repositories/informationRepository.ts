@@ -1,4 +1,4 @@
-import type { InformationInput, InformationItem, SortOption } from '../../models';
+import type { InformationInput, InformationItem, InformationStatus, SortOption } from '../../models';
 import { AppError, withDbError } from '../../utils/errors';
 import { mapInformationItem } from '../mappers';
 import type { SqlExecutor, SqlParam } from '../types';
@@ -25,9 +25,40 @@ export interface InformationFilter {
   search?: string;
   categoryId?: number | null;
   tagId?: number | null;
+  collectionId?: number | null;
+  /** 'due' is applied by the service layer (needs the schedule logic). */
+  status?: InformationStatus;
   /** SQL-level sort; "nextReminder" is applied by the service layer. */
   sort?: SortOption;
   limit?: number;
+}
+
+const MASTERY_RANGES: Partial<Record<InformationStatus, [number, number]>> = {
+  new: [0, 0],
+  learning: [1, 2],
+  known: [3, 4],
+  mastered: [5, 5],
+};
+
+/** Columns written from the form (besides title/content/category/source/created_at). */
+interface ExtraColumns {
+  question: string | null;
+  isFavorite: boolean;
+  imagePath: string | null;
+  audioPath: string | null;
+  collectionId: number | null;
+  collectionPosition: number | null;
+}
+
+function extras(input: InformationInput, collectionPosition: number | null): ExtraColumns {
+  return {
+    question: input.question?.trim() || null,
+    isFavorite: input.isFavorite ?? false,
+    imagePath: input.imagePath || null,
+    audioPath: input.audioPath || null,
+    collectionId: input.collectionId ?? null,
+    collectionPosition: input.collectionId ? collectionPosition : null,
+  };
 }
 
 export class InformationRepository {
@@ -42,9 +73,10 @@ export class InformationRepository {
       if (search) {
         const pattern = `%${escapeLike(search)}%`;
         where.push(
-          "(i.title LIKE ? ESCAPE '\\' OR i.content LIKE ? ESCAPE '\\' OR IFNULL(i.source, '') LIKE ? ESCAPE '\\')",
+          `(i.title LIKE ? ESCAPE '\\' OR i.content LIKE ? ESCAPE '\\' OR IFNULL(i.source, '') LIKE ? ESCAPE '\\'
+            OR IFNULL(i.question, '') LIKE ? ESCAPE '\\')`,
         );
-        params.push(pattern, pattern, pattern);
+        params.push(pattern, pattern, pattern, pattern);
       }
       if (typeof filter.categoryId === 'number') {
         where.push('i.category_id = ?');
@@ -54,9 +86,25 @@ export class InformationRepository {
         where.push('i.id IN (SELECT information_id FROM information_tags WHERE tag_id = ?)');
         params.push(filter.tagId);
       }
+      if (typeof filter.collectionId === 'number') {
+        where.push('i.collection_id = ?');
+        params.push(filter.collectionId);
+      }
+      if (filter.status === 'favorites') {
+        where.push('i.is_favorite = 1');
+      }
+      const range = filter.status ? MASTERY_RANGES[filter.status] : undefined;
+      if (range) {
+        where.push('i.mastery BETWEEN ? AND ?');
+        params.push(range[0], range[1]);
+      }
 
+      const byDate = filter.sort === 'createdAsc' ? 'i.created_at ASC, i.id ASC' : 'i.created_at DESC, i.id DESC';
+      // A collection is read in its own order; otherwise favorites come first.
       const order =
-        filter.sort === 'createdAsc' ? 'i.created_at ASC, i.id ASC' : 'i.created_at DESC, i.id DESC';
+        typeof filter.collectionId === 'number'
+          ? `i.collection_position ASC, ${byDate}`
+          : `i.is_favorite DESC, ${byDate}`;
       let sql = `${SELECT_ITEMS}${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order}`;
       if (filter.limit) {
         sql += ' LIMIT ?';
@@ -71,6 +119,19 @@ export class InformationRepository {
     return withDbError('load the information', async () => {
       const result = await this.db.execute(`${SELECT_ITEMS} WHERE i.id = ?`, [id]);
       return result.rows[0] ? mapInformationItem(result.rows[0]) : null;
+    });
+  }
+
+  findByIds(ids: number[]): Promise<InformationItem[]> {
+    return withDbError('load the information', async () => {
+      if (ids.length === 0) {
+        return [];
+      }
+      const result = await this.db.execute(
+        `${SELECT_ITEMS} WHERE i.id IN (${ids.map(() => '?').join(', ')}) ORDER BY i.title COLLATE NOCASE ASC`,
+        ids,
+      );
+      return result.rows.map(mapInformationItem);
     });
   }
 
@@ -91,11 +152,39 @@ export class InformationRepository {
     });
   }
 
-  insert(input: InformationInput, now: number): Promise<number> {
-    return withDbError('save the information', async () => {
+  /** Number of items per mastery level (0…5). */
+  masteryCounts(): Promise<number[]> {
+    return withDbError('count your information', async () => {
+      const result = await this.db.execute('SELECT mastery, COUNT(*) AS n FROM information GROUP BY mastery');
+      const counts = [0, 0, 0, 0, 0, 0];
+      for (const row of result.rows) {
+        const level = Number(row.mastery);
+        if (level >= 0 && level <= 5) {
+          counts[level] = Number(row.n);
+        }
+      }
+      return counts;
+    });
+  }
+
+  /** Next free position at the end of a collection. */
+  nextCollectionPosition(collectionId: number): Promise<number> {
+    return withDbError('load the collection', async () => {
       const result = await this.db.execute(
-        `INSERT INTO information (title, content, category_id, source, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        'SELECT IFNULL(MAX(collection_position), 0) + 1 AS next FROM information WHERE collection_id = ?',
+        [collectionId],
+      );
+      return Number(result.rows[0]?.next ?? 1);
+    });
+  }
+
+  insert(input: InformationInput, now: number, collectionPosition: number | null = null): Promise<number> {
+    return withDbError('save the information', async () => {
+      const x = extras(input, collectionPosition);
+      const result = await this.db.execute(
+        `INSERT INTO information (title, content, category_id, source, created_at, updated_at,
+           question, is_favorite, image_path, audio_path, collection_id, collection_position)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           input.title.trim(),
           input.content.trim(),
@@ -103,6 +192,12 @@ export class InformationRepository {
           input.source?.trim() || null,
           input.createdAt,
           now,
+          x.question,
+          x.isFavorite ? 1 : 0,
+          x.imagePath,
+          x.audioPath,
+          x.collectionId,
+          x.collectionPosition,
         ],
       );
       if (result.insertId === undefined) {
@@ -112,11 +207,13 @@ export class InformationRepository {
     });
   }
 
-  update(id: number, input: InformationInput, now: number): Promise<void> {
+  update(id: number, input: InformationInput, now: number, collectionPosition: number | null = null): Promise<void> {
     return withDbError('update the information', async () => {
+      const x = extras(input, collectionPosition);
       await this.db.execute(
         `UPDATE information
-         SET title = ?, content = ?, category_id = ?, source = ?, created_at = ?, updated_at = ?
+         SET title = ?, content = ?, category_id = ?, source = ?, created_at = ?, updated_at = ?,
+             question = ?, is_favorite = ?, image_path = ?, audio_path = ?, collection_id = ?, collection_position = ?
          WHERE id = ?`,
         [
           input.title.trim(),
@@ -125,13 +222,68 @@ export class InformationRepository {
           input.source?.trim() || null,
           input.createdAt,
           now,
+          x.question,
+          x.isFavorite ? 1 : 0,
+          x.imagePath,
+          x.audioPath,
+          x.collectionId,
+          x.collectionPosition,
           id,
         ],
       );
     });
   }
 
-  /** Reminders and review history are removed by ON DELETE CASCADE. */
+  setFavorite(id: number, favorite: boolean): Promise<void> {
+    return withDbError('update the information', async () => {
+      await this.db.execute('UPDATE information SET is_favorite = ? WHERE id = ?', [favorite ? 1 : 0, id]);
+    });
+  }
+
+  setMastery(id: number, mastery: number): Promise<void> {
+    return withDbError('update the information', async () => {
+      const level = Math.max(0, Math.min(5, Math.round(mastery)));
+      await this.db.execute('UPDATE information SET mastery = ? WHERE id = ?', [level, id]);
+    });
+  }
+
+  setCollectionPosition(id: number, position: number): Promise<void> {
+    return withDbError('update the collection', async () => {
+      await this.db.execute('UPDATE information SET collection_position = ? WHERE id = ?', [position, id]);
+    });
+  }
+
+  /** Ids of the items linked to `id` ("see also"), in both directions. */
+  linkedIds(id: number): Promise<number[]> {
+    return withDbError('load the links', async () => {
+      const result = await this.db.execute(
+        'SELECT b_id AS other FROM information_links WHERE a_id = ? UNION SELECT a_id FROM information_links WHERE b_id = ?',
+        [id, id],
+      );
+      return result.rows.map(r => Number(r.other));
+    });
+  }
+
+  link(a: number, b: number, now: number): Promise<void> {
+    return withDbError('link the information', async () => {
+      if (a === b) {
+        return;
+      }
+      await this.db.execute('INSERT OR IGNORE INTO information_links (a_id, b_id, created_at) VALUES (?, ?, ?)', [
+        Math.min(a, b),
+        Math.max(a, b),
+        now,
+      ]);
+    });
+  }
+
+  unlink(a: number, b: number): Promise<void> {
+    return withDbError('unlink the information', async () => {
+      await this.db.execute('DELETE FROM information_links WHERE a_id = ? AND b_id = ?', [Math.min(a, b), Math.max(a, b)]);
+    });
+  }
+
+  /** Reminders, review history and links are removed by ON DELETE CASCADE. */
   delete(id: number): Promise<void> {
     return withDbError('delete the information', async () => {
       await this.db.execute('DELETE FROM information WHERE id = ?', [id]);

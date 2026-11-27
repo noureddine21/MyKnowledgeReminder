@@ -272,6 +272,12 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
           onPress={() => navigation.navigate('Backup')}
         />
         <ListRow
+          icon="bookmark-multiple-outline"
+          title={tr('Collections')}
+          subtitle={tr('Ordered series with progress (40 Hadith…)')}
+          onPress={() => navigation.navigate('Collections')}
+        />
+        <ListRow
           icon="tag-multiple-outline"
           title={tr('Categories')}
           subtitle={tr('Create, edit and delete categories')}

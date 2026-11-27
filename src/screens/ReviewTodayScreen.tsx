@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   CategoryBadge,
+  Chip,
   EmptyState,
   ErrorView,
   Icon,
@@ -14,7 +15,8 @@ import { useFocusData } from '../hooks/useFocusData';
 import { useReviewActions } from '../hooks/useReviewActions';
 import type { TabScreenProps } from '../navigation/types';
 import { getDueToday, type DueItem } from '../services/reviewService';
-import { useAppTheme, fonts } from '../theme';
+import { useAppTheme, fonts, withAlpha } from '../theme';
+import { SESSION_MINUTES } from '../services/reviewSession';
 import { formatLongToday, formatRelative } from '../utils/date';
 
 import { tr, trn } from '../i18n';
@@ -90,8 +92,32 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
           </AppText>
         </Pressable>
 
-        <View style={[styles.row, { marginTop: spacing.md, gap: spacing.sm }]}>
-          <Button title={tr('Reviewed')} icon="check" onPress={() => markAsReviewed(item)} loading={busy} style={styles.flex} compact />
+        <AppText variant="caption" tone="secondary" style={{ marginTop: spacing.md }}>{tr('How well did you remember it?')}</AppText>
+        <View style={[styles.row, { marginTop: spacing.xs, gap: spacing.sm }]}>
+          {(
+            [
+              ['hard', tr('Hard'), colors.danger],
+              ['good', tr('Good'), colors.primary],
+              ['easy', tr('Easy'), colors.success],
+            ] as const
+          ).map(([grade, label, color]) => (
+            <Pressable
+              key={grade}
+              disabled={busy}
+              onPress={() => markAsReviewed(item, grade)}
+              accessibilityRole="button"
+              style={({ pressed }) => [
+                styles.grade,
+                { backgroundColor: withAlpha(color, pressed ? 0.25 : 0.12), opacity: busy ? 0.5 : 1 },
+              ]}
+            >
+              <AppText variant="bodyStrong" color={color}>
+                {label}
+              </AppText>
+            </Pressable>
+          ))}
+        </View>
+        <View style={[styles.row, { marginTop: spacing.sm, gap: spacing.sm }]}>
           <Button
             title={tr('Later')}
             icon="calendar-clock"
@@ -131,10 +157,13 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
               style={{ marginTop: spacing.md }}
             />
             <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>{tr('Try to remember each item before seeing it — the best way to memorize.')}</AppText>
+            <QuickSessions onStart={minutes => navigation.navigate('Quiz', { minutes })} />
           </View>
         ) : null
       }
       ListEmptyComponent={
+        <View>
+        <QuickSessions onStart={minutes => navigation.navigate('Quiz', { minutes })} />
         <EmptyState
           icon="check-decagram-outline"
           title={tr('All caught up!')}
@@ -142,9 +171,26 @@ export function ReviewTodayScreen({ navigation }: TabScreenProps<'ReviewToday'>)
           actionLabel={tr('Practice anyway')}
           onAction={() => navigation.navigate('Quiz', { practice: true })}
         />
+        </View>
       }
       renderItem={renderItem}
     />
+  );
+}
+
+/** "Quick session: 5 / 10 / 15 min" — the most urgent and least known items first. */
+function QuickSessions({ onStart }: { onStart: (minutes: number) => void }) {
+  const { colors, spacing } = useAppTheme();
+  return (
+    <View style={[styles.row, { marginTop: spacing.md, flexWrap: 'wrap' }]}>
+      <Icon name="timer-outline" size={18} color={colors.primary} />
+      <AppText variant="small" tone="secondary" style={{ marginLeft: spacing.xs, marginRight: spacing.sm }}>
+        {tr('Quick session')}
+      </AppText>
+      {SESSION_MINUTES.map(minutes => (
+        <Chip key={minutes} label={tr('{n} min', { n: minutes })} onPress={() => onStart(minutes)} />
+      ))}
+    </View>
   );
 }
 
@@ -182,5 +228,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   dueBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
   bold: { fontFamily: fonts.semibold },
+  grade: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
   iconButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

@@ -14,7 +14,9 @@ import { assertValidInformation } from '../utils/validation';
 import { cancelNotification, notificationIdFor, snoozeNotificationIdFor } from './notificationService';
 import { syncItemNotification } from './reminderSync';
 import { attachTags } from './tagService';
-import { getNextReminderAt, initialSpacedSchedule, isRepeating } from './reviewSchedule';
+import { getNextReminderAt, initialSpacedSchedule, isDueToday, isRepeating } from './reviewSchedule';
+import { findMostSimilar } from './similarity';
+import { deleteAppFile } from '../native/mkrNative';
 
 export interface SaveResult {
   id: number;
@@ -95,13 +97,28 @@ export async function saveInformation(
   const unchanged = isReminderUnchanged(existing?.reminder, reminderInput, input.createdAt);
   assertValidInformation(input, reminderInput, now, { requireFutureOnce: !unchanged });
 
+  // Joining a collection puts the item at its end; staying keeps its place.
+  const collectionId = input.collectionId ?? null;
+  const position =
+    collectionId === null
+      ? null
+      : existing && existing.collectionId === collectionId
+        ? existing.collectionPosition
+        : await repos.information.nextCollectionPosition(collectionId);
+  // Files of a removed / replaced photo or voice note.
+  const oldFiles = existing
+    ? [existing.imagePath, existing.audioPath].filter(
+        (p): p is string => !!p && p !== input.imagePath && p !== input.audioPath,
+      )
+    : [];
+
   const id = await inTransaction(async tx => {
     let itemId: number;
     if (existing) {
       itemId = existing.id;
-      await tx.information.update(itemId, input, now);
+      await tx.information.update(itemId, input, now, position);
     } else {
-      itemId = await tx.information.insert(input, now);
+      itemId = await tx.information.insert(input, now, position);
     }
     if (input.tagIds !== undefined) {
       await tx.tags.setForItem(itemId, input.tagIds);
@@ -128,6 +145,7 @@ export async function saveInformation(
     return itemId;
   });
 
+  await Promise.all(oldFiles.map(path => deleteAppFile(path)));
   const warning = await syncItemNotification(id, now, { clearSnooze: true });
   return { id, warning };
 }
@@ -136,7 +154,45 @@ export async function deleteInformation(id: number): Promise<void> {
   await cancelNotification(notificationIdFor(id));
   await cancelNotification(snoozeNotificationIdFor(id));
   const repos = await getRepositories();
+  const item = await repos.information.findById(id);
   await repos.information.delete(id);
+  await Promise.all([item?.imagePath, item?.audioPath].filter((p): p is string => !!p).map(path => deleteAppFile(path)));
+}
+
+export async function setFavorite(id: number, favorite: boolean): Promise<void> {
+  const repos = await getRepositories();
+  await repos.information.setFavorite(id, favorite);
+}
+
+/** "See also": items linked to this one. */
+export async function getLinkedItems(id: number): Promise<InformationItem[]> {
+  const repos = await getRepositories();
+  return repos.information.findByIds(await repos.information.linkedIds(id));
+}
+
+export async function linkInformation(a: number, b: number, now: number = Date.now()): Promise<void> {
+  const repos = await getRepositories();
+  await repos.information.link(a, b, now);
+}
+
+export async function unlinkInformation(a: number, b: number): Promise<void> {
+  const repos = await getRepositories();
+  await repos.information.unlink(a, b);
+}
+
+/** An existing item that looks like the one being saved (same title or ~same content), or null. */
+export async function findSimilarInformation(
+  input: { title: string; content: string },
+  excludeId?: number,
+): Promise<InformationItem | null> {
+  const repos = await getRepositories();
+  return findMostSimilar(input, await repos.information.findAll(), excludeId);
+}
+
+/** Number of items per mastery level (0…5). */
+export async function getMasteryCounts(): Promise<number[]> {
+  const repos = await getRepositories();
+  return repos.information.masteryCounts();
 }
 
 export async function getInformation(id: number): Promise<InformationItem | null> {
@@ -176,13 +232,18 @@ export async function listInformation(
   now: number = Date.now(),
 ): Promise<InformationItem[]> {
   const repos = await getRepositories();
-  const items = await attachTags(
+  let items = await attachTags(
     await repos.information.findAll({
       search: query.search,
       categoryId: query.categoryId,
       tagId: query.tagId,
+      collectionId: query.collectionId,
+      status: query.status,
       sort: query.sort,
     }),
   );
+  if (query.status === 'due') {
+    items = items.filter(item => item.reminder !== null && isDueToday(item.reminder, now));
+  }
   return query.sort === 'nextReminder' ? sortByNextReminder(items, now) : items;
 }

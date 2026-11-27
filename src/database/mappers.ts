@@ -36,6 +36,13 @@ export function mapInformation(row: SqlRow): Information {
     source: strOrNull(row.source),
     createdAt: num(row.created_at),
     updatedAt: num(row.updated_at),
+    question: strOrNull(row.question) || null,
+    isFavorite: bool(row.is_favorite),
+    mastery: Math.max(0, Math.min(5, num(row.mastery ?? 0) || 0)),
+    imagePath: strOrNull(row.image_path) || null,
+    audioPath: strOrNull(row.audio_path) || null,
+    collectionId: numOrNull(row.collection_id),
+    collectionPosition: numOrNull(row.collection_position),
   };
 }
 

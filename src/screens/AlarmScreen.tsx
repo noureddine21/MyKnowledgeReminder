@@ -31,6 +31,7 @@ export function AlarmScreen({ route, navigation }: RootStackScreenProps<'Alarm'>
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -152,7 +153,7 @@ export function AlarmScreen({ route, navigation }: RootStackScreenProps<'Alarm'>
   const isTest = notificationId === TEST_ALARM_ID;
   const title =
     loaded.kind === 'item'
-      ? loaded.item.title
+      ? loaded.item.question ?? loaded.item.title
       : loaded.kind === 'task'
         ? loaded.task.title
         : isTest
@@ -188,7 +189,18 @@ export function AlarmScreen({ route, navigation }: RootStackScreenProps<'Alarm'>
             {formatDuration(loaded.task.durationMin)}
           </AppText>
         ) : null}
-        {loaded.kind === 'item' ? (
+        {loaded.kind === 'item' && loaded.item.question && !revealed ? (
+          <Pressable
+            onPress={() => setRevealed(true)}
+            accessibilityRole="button"
+            style={[styles.card, styles.reveal, { borderColor: withAlpha(colors.accent, 0.5), borderRadius: radius.lg, padding: spacing.lg, marginTop: spacing.lg }]}
+          >
+            <Icon name="eye-outline" size={26} color={colors.accent} />
+            <AppText color={colors.heroText} style={{ marginTop: spacing.xs }}>
+              {tr('Show answer')}
+            </AppText>
+          </Pressable>
+        ) : loaded.kind === 'item' ? (
           <View style={[styles.card, { backgroundColor: withAlpha('#FFFFFF', 0.08), borderColor: withAlpha(colors.accent, 0.3), borderRadius: radius.lg, padding: spacing.lg, marginTop: spacing.lg }]}>
             <AppText
               color={colors.heroText}
@@ -258,6 +270,7 @@ const styles = StyleSheet.create({
   clock: { fontFamily: fonts.extrabold, fontSize: 64, lineHeight: 76, marginTop: 12 },
   kicker: { letterSpacing: 2, fontFamily: fonts.extrabold },
   card: { borderWidth: 1 },
+  reveal: { alignItems: 'center', borderStyle: 'dashed' },
   content: { fontSize: 17, lineHeight: 27 },
   action: { minHeight: 56, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   actionText: { fontFamily: fonts.bold, fontSize: 17 },

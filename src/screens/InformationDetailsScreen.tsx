@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import React, { useCallback, useLayoutEffect, useState } from 'react';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import {
   AppText,
   Button,
@@ -9,10 +9,14 @@ import {
   EmptyState,
   ErrorView,
   Icon,
+  ItemImage,
+  ItemPickerModal,
   ListRow,
   LoadingView,
+  MasteryBadge,
   Screen,
   SectionHeader,
+  VoiceNotePlayer,
 } from '../components';
 import { FREQUENCY_LABELS } from '../constants';
 import { useErrorHandler } from '../hooks/useErrorHandler';
@@ -22,13 +26,22 @@ import { useReviewActions } from '../hooks/useReviewActions';
 import { useSettings } from '../hooks/useSettings';
 import type { Reminder } from '../models';
 import type { RootStackScreenProps } from '../navigation/types';
-import { getInformation, getReviewHistory } from '../services/informationService';
+import { getCollection } from '../services/collectionService';
+import {
+  getInformation,
+  getLinkedItems,
+  getReviewHistory,
+  linkInformation,
+  setFavorite,
+  unlinkInformation,
+} from '../services/informationService';
 import { getNextReminderAt, isDueToday } from '../services/reviewSchedule';
 import { setReminderActive } from '../services/reviewService';
+import { shareCard, isNativeAvailable } from '../native/mkrNative';
 import { useAppTheme, arabicTextStyle } from '../theme';
 import { formatDateTime, formatRelative } from '../utils/date';
 import { formatRecurrence } from '../utils/recurrence';
-import { ValidationError } from '../utils/errors';
+import { ValidationError, describeError } from '../utils/errors';
 
 import { tr } from '../i18n';
 function reminderSummary(reminder: Reminder, intervals: number[]): string {
@@ -47,21 +60,54 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
   const { settings } = useSettings();
   const handleError = useErrorHandler();
   const { ensurePermission } = useNotificationPermission();
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const loader = useCallback(async () => {
-    const [item, history] = await Promise.all([
+    const [item, history, linked] = await Promise.all([
       getInformation(informationId),
       getReviewHistory(informationId),
+      getLinkedItems(informationId),
     ]);
-    return { item, history, now: Date.now() };
+    const collection = item?.collectionId ? await getCollection(item.collectionId) : null;
+    return { item, history, linked, collection, now: Date.now() };
   }, [informationId]);
   const { data, error, reload } = useFocusData(loader, 'details');
   const { busyId, markAsReviewed, scheduleAnother, edit, remove } = useReviewActions(reload);
 
+  const item = data?.item ?? null;
+  const toggleFavorite = useCallback(async () => {
+    if (!item) {
+      return;
+    }
+    try {
+      await setFavorite(item.id, !item.isFavorite);
+      reload();
+    } catch (e) {
+      handleError(e, 'details:favorite');
+    }
+  }, [item, reload, handleError]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: item
+        ? () => (
+            <Pressable
+              onPress={toggleFavorite}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={item.isFavorite ? tr('Remove from favorites') : tr('Add to favorites')}
+            >
+              <Icon name={item.isFavorite ? 'star' : 'star-outline'} size={26} color={colors.accent} />
+            </Pressable>
+          )
+        : undefined,
+    });
+  }, [navigation, item, toggleFavorite, colors.accent]);
+
   if (!data) {
     return error ? <ErrorView message={error} onRetry={reload} /> : <LoadingView />;
   }
-  const { item, history, now } = data;
+  const { history, linked, collection, now } = data;
   if (!item) {
     return (
       <Screen scroll={false}>
@@ -103,12 +149,70 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
     }
   };
 
+  const share = async () => {
+    try {
+      await shareCard({
+        title: item.title,
+        content: item.content,
+        source: item.source,
+        footer: 'My Knowledge Reminder',
+        chooserTitle: tr('Share as image'),
+      });
+    } catch (e) {
+      Alert.alert(tr('Could not share'), describeError(e));
+    }
+  };
+
+  const link = async (otherId: number) => {
+    setPickerOpen(false);
+    try {
+      await linkInformation(item.id, otherId);
+      reload();
+    } catch (e) {
+      handleError(e, 'details:link');
+    }
+  };
+
+  const unlink = (otherId: number, title: string) =>
+    Alert.alert(tr('Remove this link?'), title, [
+      { text: tr('Cancel'), style: 'cancel' },
+      {
+        text: tr('Remove'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await unlinkInformation(item.id, otherId);
+            reload();
+          } catch (e) {
+            handleError(e, 'details:unlink');
+          }
+        },
+      },
+    ]);
+
   return (
     <Screen>
-      <CategoryBadge category={item.category} />
+      <View style={styles.between}>
+        <CategoryBadge category={item.category} />
+        <MasteryBadge mastery={item.mastery} />
+      </View>
       <AppText variant="title" selectable style={{ marginTop: spacing.sm }}>
+        {item.isFavorite ? '⭐ ' : ''}
         {item.title}
       </AppText>
+      {collection ? (
+        <Pressable
+          onPress={() => navigation.navigate('Collection', { collectionId: collection.id })}
+          accessibilityRole="button"
+          style={[styles.row, { marginTop: spacing.xs }]}
+        >
+          <Icon name="bookmark-multiple-outline" size={16} color={collection.color} />
+          <AppText variant="small" color={collection.color} style={styles.rowText}>
+            {collection.name}
+            {item.collectionPosition ? ` · #${item.collectionPosition}` : ''}
+          </AppText>
+        </Pressable>
+      ) : null}
       {item.tags && item.tags.length > 0 ? (
         <View style={[styles.tagRow, { marginTop: spacing.sm }]}>
           {item.tags.map(tag => (
@@ -125,11 +229,31 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
         </View>
       ) : null}
 
+      {item.question ? (
+        <View style={[styles.row, { marginTop: spacing.md }]}>
+          <Icon name="help-circle-outline" size={18} color={colors.accentStrong} />
+          <AppText variant="bodyStrong" color={colors.accentStrong} selectable style={styles.rowText}>
+            {item.question}
+          </AppText>
+        </View>
+      ) : null}
+
       <Card style={{ marginTop: spacing.lg }}>
         <AppText selectable style={[styles.content, arabicTextStyle(item.content)]}>
           {item.content}
         </AppText>
       </Card>
+
+      {item.imagePath ? (
+        <View style={{ marginTop: spacing.md }}>
+          <ItemImage uri={item.imagePath} onPress={() => navigation.navigate('Reading', { ids: [item.id], title: item.title })} />
+        </View>
+      ) : null}
+      {item.audioPath ? (
+        <View style={{ marginTop: spacing.md }}>
+          <VoiceNotePlayer path={item.audioPath} />
+        </View>
+      ) : null}
 
       <AppText variant="caption" tone="muted" style={{ marginTop: spacing.sm }}>{tr('Created ')}{formatDateTime(item.createdAt)}
         {item.updatedAt !== item.createdAt ? tr(' · Updated {date}', { date: formatDateTime(item.updatedAt) }) : ''}
@@ -152,6 +276,37 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
           style={styles.flex}
         />
       </View>
+      <View style={[styles.actions, { marginTop: spacing.sm, gap: spacing.sm }]}>
+        <Button
+          title={tr('Reading mode')}
+          icon="book-open-outline"
+          variant="ghost"
+          compact
+          onPress={() => navigation.navigate('Reading', { ids: [item.id, ...linked.map(l => l.id)], title: item.title })}
+          style={styles.flex}
+        />
+        {isNativeAvailable() ? (
+          <Button title={tr('Share as image')} icon="image-outline" variant="ghost" compact onPress={share} style={styles.flex} />
+        ) : null}
+      </View>
+
+      <SectionHeader title={tr('See also')} />
+      <Card style={{ paddingVertical: spacing.xs }}>
+        {linked.map(other => (
+          <ListRow
+            key={other.id}
+            icon="link-variant"
+            title={other.title}
+            subtitle={other.category?.name}
+            onPress={() => navigation.push('InformationDetails', { informationId: other.id })}
+            onLongPress={() => unlink(other.id, other.title)}
+          />
+        ))}
+        <ListRow icon="link-plus" title={tr('Link another information')} iconColor={colors.primary} onPress={() => setPickerOpen(true)} />
+      </Card>
+      {linked.length > 0 ? (
+        <AppText variant="caption" tone="muted" style={{ marginTop: spacing.xs }}>{tr('Long-press a link to remove it.')}</AppText>
+      ) : null}
 
       <SectionHeader title={tr('Reminder')} />
       <Card style={{ paddingVertical: spacing.xs }}>
@@ -196,7 +351,7 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
                 color={entry.status === 'reviewed' ? colors.success : colors.warning}
               />
               <AppText variant="small" style={styles.rowText}>
-                {entry.status === 'reviewed' ? 'Reviewed' : 'Rescheduled'} · {formatDateTime(entry.reviewedAt)}
+                {entry.status === 'reviewed' ? tr('Reviewed') : tr('Rescheduled')} · {formatDateTime(entry.reviewedAt)}
               </AppText>
             </View>
           ))}
@@ -214,6 +369,14 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
           style={styles.flex}
         />
       </View>
+
+      <ItemPickerModal
+        visible={pickerOpen}
+        title={tr('Link another information')}
+        excludeIds={[item.id, ...linked.map(l => l.id)]}
+        onClose={() => setPickerOpen(false)}
+        onPick={other => link(other.id)}
+      />
     </Screen>
   );
 }
@@ -221,6 +384,7 @@ export function InformationDetailsScreen({ route, navigation }: RootStackScreenP
 const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap' },
   flex: { flex: 1 },
+  between: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   row: { flexDirection: 'row', alignItems: 'center' },
   rowText: { marginLeft: 6, flex: 1 },
   content: { fontSize: 17, lineHeight: 27 },

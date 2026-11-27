@@ -17,3 +17,5 @@ export { TaskTimeEditor, type TaskTiming } from './TaskTimeEditor';
 export { CityPicker } from './CityPicker';
 export { TagPicker, TagPill } from './TagPicker';
 export { TaskListBuilder, TASK_SUGGESTIONS } from './TaskListBuilder';
+export { ItemImage, MasteryBadge, MasteryDots, ProgressBar, VoiceNotePlayer, VoiceNoteRecorder } from './InfoExtras';
+export { ItemPickerModal } from './ItemPickerModal';

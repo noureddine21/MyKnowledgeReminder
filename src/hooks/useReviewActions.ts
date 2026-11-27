@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react';
 import { Alert, Platform, ToastAndroid } from 'react-native';
 import type { InformationItem } from '../models';
 import { deleteInformation } from '../services/informationService';
-import { markReviewed, rescheduleReview } from '../services/reviewService';
+import { gradeReview, markReviewed, rescheduleReview, type QuizGrade } from '../services/reviewService';
 import { addDays, applyTimeString, formatRelative } from '../utils/date';
 import { pickDateTime } from '../utils/pickers';
 import { useErrorHandler } from './useErrorHandler';
@@ -30,10 +30,10 @@ export function useReviewActions(onChanged: () => void) {
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const markAsReviewed = useCallback(
-    async (item: InformationItem) => {
+    async (item: InformationItem, grade?: QuizGrade) => {
       setBusyId(item.id);
       try {
-        const result = await markReviewed(item.id);
+        const result = grade ? await gradeReview(item.id, grade) : await markReviewed(item.id);
         if (result.warning) {
           Alert.alert('Reminder not scheduled', result.warning);
         } else if (result.completed) {

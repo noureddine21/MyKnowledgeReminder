@@ -12,12 +12,14 @@ import { Icon } from '../components';
 import { AlarmScreen } from '../screens/AlarmScreen';
 import { BackupScreen } from '../screens/BackupScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
+import { CollectionScreen, CollectionsScreen } from '../screens/CollectionsScreen';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { InformationDetailsScreen } from '../screens/InformationDetailsScreen';
 import { AddInformationScreen, EditInformationScreen } from '../screens/InformationFormScreen';
 import { InformationListScreen } from '../screens/InformationListScreen';
 import { PlanScreen } from '../screens/PlanScreen';
 import { QuizScreen } from '../screens/QuizScreen';
+import { ReadingScreen } from '../screens/ReadingScreen';
 import { ReminderSettingsScreen } from '../screens/ReminderSettingsScreen';
 import { RoutinesScreen } from '../screens/RoutinesScreen';
 import { ReviewTodayScreen } from '../screens/ReviewTodayScreen';
@@ -145,6 +147,9 @@ export function RootNavigator() {
         <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: tr('Routines') }} />
         <Stack.Screen name="Quiz" component={QuizScreen} options={{ title: tr('Quiz') }} />
         <Stack.Screen name="Stats" component={StatsScreen} options={{ title: tr('Statistics') }} />
+        <Stack.Screen name="Collections" component={CollectionsScreen} options={{ title: tr('Collections') }} />
+        <Stack.Screen name="Collection" component={CollectionScreen} options={{ title: tr('Collection') }} />
+        <Stack.Screen name="Reading" component={ReadingScreen} options={{ title: tr('Reading mode') }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: tr('Settings') }} />
         <Stack.Screen
           name="Alarm"

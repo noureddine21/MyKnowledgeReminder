@@ -15,6 +15,13 @@ const item: InformationItem = {
   source: '2:255',
   createdAt: at(2026, 1, 1),
   updatedAt: at(2026, 1, 1),
+  question: null,
+  isFavorite: true,
+  mastery: 3,
+  imagePath: null,
+  audioPath: null,
+  collectionId: null,
+  collectionPosition: null,
   category: { id: 1, name: 'Quran', color: '#0E9F6E', icon: 'book-open-page-variant', isDefault: true, createdAt: 0 },
   reminder: {
     id: 1,

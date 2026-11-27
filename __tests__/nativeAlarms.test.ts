@@ -17,6 +17,7 @@ jest.mock('../src/native/mkrNative', () => ({
   cancelNativeAlarmsWithPrefix: jest.fn(async () => {}),
   updateWidget: jest.fn(async () => 0),
   recognizeText: jest.fn(),
+  deleteAppFile: jest.fn(async () => {}),
 }));
 
 const at = (h: number, m = 0) => new Date(2026, 10, 27, h, m).getTime();

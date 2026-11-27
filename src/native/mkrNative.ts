@@ -21,6 +21,15 @@ interface MkrNativeSpec {
   stopAlarmSound(): Promise<void>;
   canScheduleExactAlarms(): Promise<boolean>;
   openVendorSettings(page: 'autostart' | 'permissions'): Promise<boolean>;
+  pickImage(): Promise<string | null>;
+  importImage(uri: string): Promise<string>;
+  deleteAppFile(path: string): Promise<void>;
+  startRecording(): Promise<string>;
+  stopRecording(): Promise<{ path: string; durationMs: number }>;
+  cancelRecording(): Promise<void>;
+  playAudio(path: string): Promise<boolean>;
+  stopAudio(): Promise<void>;
+  shareCard(card: { title: string; content: string; source: string | null; footer: string; chooserTitle: string }): Promise<boolean>;
 }
 
 /** A real alarm (Android alarm clock API) that rings in the app's own service. */
@@ -157,4 +166,68 @@ export function isXiaomiDevice(): boolean {
   const constants = Platform.constants as { Manufacturer?: string; Brand?: string } | undefined;
   const name = `${constants?.Manufacturer ?? ''} ${constants?.Brand ?? ''}`.toLowerCase();
   return /xiaomi|redmi|poco/.test(name);
+}
+
+// --- Photos, voice notes, share as image ---------------------------------------
+
+/** Opens the gallery; the chosen photo is copied into the app. Resolves file://…, or null if cancelled. */
+export function pickImage() {
+  return module().pickImage();
+}
+
+/** Copies a shared image (content://) into the app. Resolves file://… */
+export function importImage(uri: string) {
+  return module().importImage(uri);
+}
+
+/** Deletes a photo / voice note of the app. Never throws. */
+export async function deleteAppFile(path: string): Promise<void> {
+  if (!isNativeAvailable()) {
+    return;
+  }
+  try {
+    await module().deleteAppFile(path);
+  } catch {
+    // Already gone.
+  }
+}
+
+export function startRecording() {
+  return module().startRecording();
+}
+
+export function stopRecording() {
+  return module().stopRecording();
+}
+
+export async function cancelRecording(): Promise<void> {
+  if (!isNativeAvailable()) {
+    return;
+  }
+  try {
+    await module().cancelRecording();
+  } catch {
+    // Not recording.
+  }
+}
+
+/** Plays a voice note. Resolves true at the end, false when stopped. */
+export function playAudio(path: string) {
+  return module().playAudio(path);
+}
+
+export async function stopAudio(): Promise<void> {
+  if (!isNativeAvailable()) {
+    return;
+  }
+  try {
+    await module().stopAudio();
+  } catch {
+    // Not playing.
+  }
+}
+
+/** Draws the item as an emerald & gold image and opens the share sheet. */
+export function shareCard(card: { title: string; content: string; source: string | null; footer: string; chooserTitle: string }) {
+  return module().shareCard(card);
 }

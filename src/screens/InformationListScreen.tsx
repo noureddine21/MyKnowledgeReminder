@@ -11,7 +11,7 @@ import {
   LoadingView,
 } from '../components';
 import { useFocusData } from '../hooks/useFocusData';
-import type { SortOption } from '../models';
+import type { InformationStatus, SortOption } from '../models';
 import type { TabScreenProps } from '../navigation/types';
 import { listCategories } from '../services/categoryService';
 import { listInformation } from '../services/informationService';
@@ -21,6 +21,15 @@ import { tr, trn } from '../i18n';
 import type { TagWithCount } from '../models';
 import { deleteTag, listTags } from '../services/tagService';
 import { describeError } from '../utils/errors';
+const STATUS_OPTIONS: { value: InformationStatus; label: string; icon: string }[] = [
+  { value: 'favorites', label: 'Favorites', icon: 'star-outline' },
+  { value: 'due', label: 'To review', icon: 'bell-alert-outline' },
+  { value: 'new', label: 'New', icon: 'sprout-outline' },
+  { value: 'learning', label: 'Learning', icon: 'progress-clock' },
+  { value: 'known', label: 'Known', icon: 'check-circle-outline' },
+  { value: 'mastered', label: 'Mastered', icon: 'trophy-outline' },
+];
+
 const SORT_OPTIONS: { value: SortOption; label: string; icon: string }[] = [
   { value: 'createdDesc', label: 'Newest', icon: 'sort-calendar-descending' },
   { value: 'createdAsc', label: 'Oldest', icon: 'sort-calendar-ascending' },
@@ -42,6 +51,7 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [tagId, setTagId] = useState<number | null>(null);
   const [sort, setSort] = useState<SortOption>('createdDesc');
+  const [status, setStatus] = useState<InformationStatus>('all');
   const debouncedSearch = useDebounced(search, 250);
 
   // Category selected from the dashboard.
@@ -80,12 +90,12 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
 
   const loader = useCallback(async () => {
     const now = Date.now();
-    const items = await listInformation({ search: debouncedSearch, categoryId, tagId, sort }, now);
+    const items = await listInformation({ search: debouncedSearch, categoryId, tagId, status, sort }, now);
     return { now, items };
-  }, [debouncedSearch, categoryId, tagId, sort]);
+  }, [debouncedSearch, categoryId, tagId, status, sort]);
   const { data, loading, error, reload } = useFocusData(loader, 'library');
 
-  const filtersActive = debouncedSearch.trim().length > 0 || categoryId !== null || tagId !== null;
+  const filtersActive = debouncedSearch.trim().length > 0 || categoryId !== null || tagId !== null || status !== 'all';
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
@@ -167,10 +177,20 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
         contentContainerStyle={{ paddingHorizontal: spacing.lg }}
         style={styles.noGrow}
       >
+        {STATUS_OPTIONS.map(option => (
+          <Chip
+            key={option.value}
+            label={tr(option.label)}
+            icon={option.icon}
+            selected={status === option.value}
+            onPress={() => setStatus(status === option.value ? 'all' : option.value)}
+          />
+        ))}
+        <View style={[styles.divider, { backgroundColor: colors.border, marginRight: spacing.sm }]} />
         {SORT_OPTIONS.map(option => (
           <Chip
             key={option.value}
-            label={option.label}
+            label={tr(option.label)}
             icon={option.icon}
             selected={sort === option.value}
             onPress={() => setSort(option.value)}
@@ -191,9 +211,31 @@ export function InformationListScreen({ navigation, route }: TabScreenProps<'Lib
           onRefresh={reload}
           keyboardShouldPersistTaps="handled"
           ListHeaderComponent={
-            <AppText variant="caption" tone="muted" style={{ marginBottom: spacing.sm }}>
-              {trn('{n} item', '{n} items', data.items.length)}
-            </AppText>
+            <View style={[styles.headerRow, { marginBottom: spacing.sm }]}>
+              <AppText variant="caption" tone="muted" style={styles.flex}>
+                {trn('{n} item', '{n} items', data.items.length)}
+              </AppText>
+              <Pressable
+                onPress={() => navigation.navigate('Collections')}
+                hitSlop={8}
+                accessibilityRole="button"
+                style={[styles.headerRow, { marginRight: spacing.lg }]}
+              >
+                <Icon name="bookmark-multiple-outline" size={18} color={colors.primary} />
+                <AppText variant="small" color={colors.primary} style={styles.headerLink}>{tr('Collections')}</AppText>
+              </Pressable>
+              {data.items.length > 0 ? (
+                <Pressable
+                  onPress={() => navigation.navigate('Reading', { ids: data.items.slice(0, 200).map(i => i.id) })}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  style={styles.headerRow}
+                >
+                  <Icon name="book-open-outline" size={18} color={colors.primary} />
+                  <AppText variant="small" color={colors.primary} style={styles.headerLink}>{tr('Read')}</AppText>
+                </Pressable>
+              ) : null}
+            </View>
           }
           ListEmptyComponent={
             filtersActive ? (
@@ -230,4 +272,7 @@ const styles = StyleSheet.create({
   noGrow: { flexGrow: 0 },
   search: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, minHeight: 46 },
   searchInput: { flex: 1, marginLeft: 8, paddingVertical: 8 },
+  divider: { width: 1, height: 24, alignSelf: 'center', marginBottom: 8 },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  headerLink: { marginLeft: 4 },
 });

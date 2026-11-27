@@ -1,3 +1,4 @@
+import { nextMastery, type Grade } from './mastery';
 import { getRepositories, inTransaction, type CategoryWithCount } from '../database/repositories';
 import type { InformationItem } from '../models';
 import { addDays, applyTimeString, endOfDay, startOfDay, toTimeString } from '../utils/date';
@@ -90,7 +91,7 @@ export interface ReviewResult {
 export async function markReviewed(
   informationId: number,
   now: number = Date.now(),
-  options: { extraSteps?: number } = {},
+  options: { extraSteps?: number; grade?: Grade } = {},
 ): Promise<ReviewResult> {
   const repos = await getRepositories();
   const item = await repos.information.findById(informationId);
@@ -104,6 +105,7 @@ export async function markReviewed(
 
   await inTransaction(async tx => {
     await tx.reviewHistory.add(informationId, 'reviewed', now);
+    await tx.information.setMastery(informationId, nextMastery(item.mastery, options.grade ?? 'good'));
     if (!reminder || !reminder.isActive) {
       return;
     }
@@ -214,7 +216,7 @@ export async function setReminderActive(
   return syncItemNotification(informationId, now);
 }
 
-export type QuizGrade = 'hard' | 'good' | 'easy';
+export type QuizGrade = Grade;
 
 /**
  * "Hard" in the quiz: the review counts, but the item comes back tomorrow
@@ -234,6 +236,7 @@ export async function reviewHard(informationId: number, now: number = Date.now()
 
   await inTransaction(async tx => {
     await tx.reviewHistory.add(informationId, 'reviewed', now);
+    await tx.information.setMastery(informationId, nextMastery(item.mastery, 'hard'));
     if (reminder && isRepeating(reminder.frequency) && reminder.isActive) {
       await tx.reminders.updateSchedule(
         reminder.id,
@@ -265,11 +268,22 @@ export function gradeReview(informationId: number, grade: QuizGrade, now: number
   if (grade === 'hard') {
     return reviewHard(informationId, now);
   }
-  return markReviewed(informationId, now, { extraSteps: grade === 'easy' ? 1 : 0 });
+  return markReviewed(informationId, now, { extraSteps: grade === 'easy' ? 1 : 0, grade });
 }
 
-/** Practice outside the schedule: only recorded in the history (statistics). */
-export async function recordPractice(informationId: number, now: number = Date.now()): Promise<void> {
+/** Practice outside the schedule: recorded in the history (statistics) and in the mastery level. */
+export async function recordPractice(
+  informationId: number,
+  now: number = Date.now(),
+  grade: Grade = 'good',
+): Promise<void> {
   const repos = await getRepositories();
-  await repos.reviewHistory.add(informationId, 'reviewed', now);
+  const item = await repos.information.findById(informationId);
+  if (!item) {
+    throw new NotFoundError('This information');
+  }
+  await inTransaction(async tx => {
+    await tx.reviewHistory.add(informationId, 'reviewed', now);
+    await tx.information.setMastery(informationId, nextMastery(item.mastery, grade));
+  });
 }

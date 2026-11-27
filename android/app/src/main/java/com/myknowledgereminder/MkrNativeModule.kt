@@ -36,6 +36,8 @@ class MkrNativeModule(private val context: ReactApplicationContext) :
   private var pendingSave: Pair<Promise, String>? = null
   private var pendingOpen: Promise? = null
   private var pendingSpeech: Promise? = null
+  private var pendingImage: Promise? = null
+  private var pendingPlayback: Promise? = null
 
   init {
     context.addActivityEventListener(this)
@@ -241,6 +243,116 @@ class MkrNativeModule(private val context: ReactApplicationContext) :
     promise.resolve(false)
   }
 
+  /** Lets the user choose a photo; it is copied (≤ 1600 px JPEG) into the app's private storage. */
+  @ReactMethod
+  fun pickImage(promise: Promise) {
+    val activity = context.currentActivity ?: return promise.reject(E_NO_ACTIVITY, "The app is not in the foreground.")
+    if (pendingImage != null) return promise.reject(E_BUSY, "A photo is already being chosen.")
+    val intent = Intent(Intent.ACTION_GET_CONTENT).addCategory(Intent.CATEGORY_OPENABLE).setType("image/*")
+    pendingImage = promise
+    try {
+      activity.startActivityForResult(Intent.createChooser(intent, null), REQUEST_IMAGE)
+    } catch (e: ActivityNotFoundException) {
+      pendingImage = null
+      promise.reject(E_UNAVAILABLE, "No gallery app is available.", e)
+    }
+  }
+
+  /** Copies a shared image (content://) into the app's private storage. */
+  @ReactMethod
+  fun importImage(uri: String, promise: Promise) {
+    Thread {
+      try {
+        promise.resolve(MediaHelper.importImage(context, Uri.parse(uri)))
+      } catch (e: Exception) {
+        promise.reject(E_IO, e.message ?: "The image could not be saved.", e)
+      }
+    }.start()
+  }
+
+  /** Deletes a photo / voice note of the app (ignores any other path). */
+  @ReactMethod
+  fun deleteAppFile(path: String, promise: Promise) {
+    if (MediaHelper.isAppMedia(context, path)) {
+      MediaHelper.toFile(path)?.delete()
+    }
+    promise.resolve(null)
+  }
+
+  @ReactMethod
+  fun startRecording(promise: Promise) {
+    try {
+      promise.resolve(MediaHelper.startRecording(context))
+    } catch (e: Exception) {
+      promise.reject(E_UNAVAILABLE, e.message ?: "The microphone is not available.", e)
+    }
+  }
+
+  /** Resolves { path, durationMs }. */
+  @ReactMethod
+  fun stopRecording(promise: Promise) {
+    try {
+      val (path, duration) = MediaHelper.stopRecording()
+      val result = com.facebook.react.bridge.Arguments.createMap()
+      result.putString("path", path)
+      result.putDouble("durationMs", duration.toDouble())
+      promise.resolve(result)
+    } catch (e: Exception) {
+      promise.reject(E_IO, e.message ?: "The recording failed.", e)
+    }
+  }
+
+  @ReactMethod
+  fun cancelRecording(promise: Promise) {
+    MediaHelper.cancelRecording()
+    promise.resolve(null)
+  }
+
+  /** Resolves true at the end of the voice note, false when stopped. */
+  @ReactMethod
+  fun playAudio(path: String, promise: Promise) {
+    if (!MediaHelper.isAppMedia(context, path)) return promise.reject(E_IO, "Invalid voice note.")
+    pendingPlayback?.resolve(false)
+    pendingPlayback = promise
+    try {
+      MediaHelper.play(context, path) { completed ->
+        if (pendingPlayback === promise) pendingPlayback = null
+        promise.resolve(completed)
+      }
+    } catch (e: Exception) {
+      pendingPlayback = null
+      promise.reject(E_IO, e.message ?: "The voice note could not be played.", e)
+    }
+  }
+
+  @ReactMethod
+  fun stopAudio(promise: Promise) {
+    MediaHelper.stopPlayback()
+    promise.resolve(null)
+  }
+
+  /** Draws the item as an emerald & gold image and opens the share sheet. */
+  @ReactMethod
+  fun shareCard(card: com.facebook.react.bridge.ReadableMap, promise: Promise) {
+    Thread {
+      try {
+        ShareCard.share(
+            context,
+            ShareCard.Card(
+                title = card.getString("title") ?: "",
+                content = card.getString("content") ?: "",
+                source = if (card.hasKey("source") && !card.isNull("source")) card.getString("source") else null,
+                footer = card.getString("footer") ?: "My Knowledge Reminder",
+            ),
+            card.getString("chooserTitle") ?: "Share",
+        )
+        promise.resolve(true)
+      } catch (e: Exception) {
+        promise.reject(E_IO, e.message ?: "The image could not be created.", e)
+      }
+    }.start()
+  }
+
   @ReactMethod
   fun updateWidget(snapshotJson: String, promise: Promise) {
     try {
@@ -288,6 +400,19 @@ class MkrNativeModule(private val context: ReactApplicationContext) :
           promise.reject(E_IO, e.message ?: "The file could not be read.", e)
         }
       }
+      REQUEST_IMAGE -> {
+        val promise = pendingImage ?: return
+        pendingImage = null
+        val uri = data?.data
+        if (resultCode != Activity.RESULT_OK || uri == null) return promise.resolve(null)
+        Thread {
+          try {
+            promise.resolve(MediaHelper.importImage(context, uri))
+          } catch (e: Exception) {
+            promise.reject(E_IO, e.message ?: "The image could not be saved.", e)
+          }
+        }.start()
+      }
       REQUEST_SPEECH -> {
         val promise = pendingSpeech ?: return
         pendingSpeech = null
@@ -305,6 +430,7 @@ class MkrNativeModule(private val context: ReactApplicationContext) :
     private const val REQUEST_SAVE = 41001
     private const val REQUEST_OPEN = 41002
     private const val REQUEST_SPEECH = 41003
+    private const val REQUEST_IMAGE = 41004
     private const val E_NO_ACTIVITY = "E_NO_ACTIVITY"
     private const val E_BUSY = "E_BUSY"
     private const val E_UNAVAILABLE = "E_UNAVAILABLE"
