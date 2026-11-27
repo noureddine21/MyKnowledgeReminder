@@ -24,12 +24,34 @@ export const WORK_NUDGES: WorkNudge[] = [
   { key: 'dhikr', emoji: '📿', icon: 'hands-pray', label: 'Dhikr', body: 'A minute of dhikr: SubhanAllah, Alhamdulillah, Allahu Akbar.' },
 ];
 
+/** Reminders written by the user are stored as "custom:<label>". */
+export const CUSTOM_NUDGE_PREFIX = 'custom:';
+export const MAX_CUSTOM_NUDGE_LENGTH = 40;
+export const MAX_CUSTOM_NUDGES = 10;
+
+export function customNudgeKey(label: string): string {
+  return `${CUSTOM_NUDGE_PREFIX}${label.trim().replace(/\s+/g, ' ').slice(0, MAX_CUSTOM_NUDGE_LENGTH)}`;
+}
+
+function customLabel(key: string): string | null {
+  if (!key.startsWith(CUSTOM_NUDGE_PREFIX)) {
+    return null;
+  }
+  const label = key.slice(CUSTOM_NUDGE_PREFIX.length).trim();
+  return label && label.length <= MAX_CUSTOM_NUDGE_LENGTH ? label : null;
+}
+
 export function isWorkNudgeKey(key: unknown): key is string {
-  return typeof key === 'string' && WORK_NUDGES.some(n => n.key === key);
+  return typeof key === 'string' && (WORK_NUDGES.some(n => n.key === key) || customLabel(key) !== null);
 }
 
 export function workNudge(key: string): WorkNudge | undefined {
-  return WORK_NUDGES.find(n => n.key === key);
+  const builtIn = WORK_NUDGES.find(n => n.key === key);
+  if (builtIn) {
+    return builtIn;
+  }
+  const label = customLabel(key);
+  return label ? { key, emoji: '🔔', icon: 'bell-outline', label, body: 'Your reminder during work.' } : undefined;
 }
 
 export interface NudgeSlot {

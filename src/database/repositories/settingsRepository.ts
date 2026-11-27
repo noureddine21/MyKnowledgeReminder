@@ -6,7 +6,7 @@ import {
   DAILY_GOAL_OPTIONS,
   WORK_NUDGE_EVERY_OPTIONS,
 } from '../../constants';
-import { isWorkNudgeKey } from '../../services/workNudges';
+import { CUSTOM_NUDGE_PREFIX, MAX_CUSTOM_NUDGES, isWorkNudgeKey } from '../../services/workNudges';
 import type { AppSettings, ThemeMode } from '../../models';
 import { withDbError } from '../../utils/errors';
 import { validateReviewIntervals } from '../../utils/validation';
@@ -107,6 +107,18 @@ function parseSettings(raw: Record<string, string>): AppSettings {
       const keys = JSON.parse(raw.planWorkNudges);
       if (Array.isArray(keys)) {
         settings.planWorkNudges = [...new Set(keys.filter(isWorkNudgeKey))];
+      }
+    } catch {
+      // Corrupted value: keep the default.
+    }
+  }
+  if (raw.planWorkNudgeCustom) {
+    try {
+      const keys = JSON.parse(raw.planWorkNudgeCustom);
+      if (Array.isArray(keys)) {
+        settings.planWorkNudgeCustom = [
+          ...new Set(keys.filter(k => isWorkNudgeKey(k) && k.startsWith(CUSTOM_NUDGE_PREFIX))),
+        ].slice(0, MAX_CUSTOM_NUDGES);
       }
     } catch {
       // Corrupted value: keep the default.

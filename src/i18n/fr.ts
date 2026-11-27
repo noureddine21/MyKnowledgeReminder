@@ -556,6 +556,12 @@ export const fr: Record<string, string> = {
   'Call family': 'Appeler la famille',
   'Groceries': 'Courses',
   'Tidy up': 'Ranger',
+  'Other': 'Autre',
+  'Your reminder': 'Votre rappel',
+  'e.g. Check my posture, Make a coffee': 'ex. Vérifier ma posture, Faire un café',
+  'Long-press one of your reminders to delete it.': 'Appui long sur un de vos rappels pour le supprimer.',
+  'Delete this reminder?': 'Supprimer ce rappel ?',
+  'Your reminder during work.': 'Votre rappel pendant le travail.',
   // Notifications
   'Time to review!': 'C’est l’heure de réviser !',
   'Time to review your saved Quran verse: {title}': 'Révisez votre verset enregistré : {title}',

@@ -40,6 +40,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   dailyItemSource: 'all',
   planWorkNudges: [],
   planWorkNudgeEveryMin: 60,
+  planWorkNudgeCustom: [],
   lastBackupAt: null,
 };
 

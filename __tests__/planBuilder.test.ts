@@ -5,7 +5,7 @@ import { parseTaskLine, parseTaskList, type ParsedTask } from '../src/services/d
 import { editableTasks, organizeToday, tasksToText, upcomingWorkNudges } from '../src/services/planService';
 import { saveRoutine } from '../src/services/routineService';
 import { getSettings, updateSetting } from '../src/services/settingsService';
-import { workNudgeSlots } from '../src/services/workNudges';
+import { customNudgeKey, isWorkNudgeKey, workNudge, workNudgeSlots } from '../src/services/workNudges';
 import { DEFAULT_SETTINGS } from '../src/constants';
 import { createTestDatabase } from '../test-utils/testDatabase';
 
@@ -89,6 +89,15 @@ describe('work-time nudges', () => {
     ]);
   });
 
+  it('accepts the user\'s own reminders', () => {
+    const key = customNudgeKey('  Check   my posture ');
+    expect(key).toBe('custom:Check my posture');
+    expect(workNudge(key)).toMatchObject({ label: 'Check my posture', emoji: '🔔' });
+    expect(isWorkNudgeKey('custom:')).toBe(false);
+    const slots = workNudgeSlots(at(26, 0), WORK, ['water', key], 60, null, 0);
+    expect(slots.map(s => s.key)).toEqual(['water', key, 'water']);
+  });
+
   it('nothing on a day off, with no nudge chosen, or with unknown keys', () => {
     expect(workNudgeSlots(at(26, 0), { workStart: null, workEnd: null }, ['water'], 60, null, 0)).toEqual([]);
     expect(workNudgeSlots(at(26, 0), WORK, [], 60, null, 0)).toEqual([]);
@@ -116,7 +125,9 @@ describe('work-time nudges', () => {
     try {
       await updateSetting('planWorkNudges', ['water', 'stretch']);
       await updateSetting('planWorkNudgeEveryMin', 90);
+      await updateSetting('planWorkNudgeCustom', ['custom:Make a coffee', 'nope']);
       expect((await getSettings()).planWorkNudges).toEqual(['water', 'stretch']);
+      expect((await getSettings()).planWorkNudgeCustom).toEqual(['custom:Make a coffee']);
       await organizeToday('Emails 15m', at(26, 7), { dayStart: '07:00', dayEnd: '22:00', workStart: '09:00', workEnd: '17:00' });
       const ids = mockedNotifee.createTriggerNotification.mock.calls.map(([n]) => n.id ?? '');
       expect(ids.some(id => id.startsWith('plan-nudge-'))).toBe(true);

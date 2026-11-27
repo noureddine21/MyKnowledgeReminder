@@ -1,7 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { AppText, Card, Chip, CityPicker, ListRow, Screen, SectionHeader, TextField } from '../components';
+import { AppText, Button, Card, Chip, CityPicker, ListRow, Screen, SectionHeader, TextField } from '../components';
 import { useErrorHandler } from '../hooks/useErrorHandler';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import { useSettings } from '../hooks/useSettings';
@@ -28,7 +28,14 @@ import {
   PLAN_PRAYER_MINUTES_OPTIONS,
   WORK_NUDGE_EVERY_OPTIONS,
 } from '../constants';
-import { WORK_NUDGES } from '../services/workNudges';
+import {
+  CUSTOM_NUDGE_PREFIX,
+  MAX_CUSTOM_NUDGES,
+  MAX_CUSTOM_NUDGE_LENGTH,
+  WORK_NUDGES,
+  customNudgeKey,
+  workNudge,
+} from '../services/workNudges';
 import { formatDuration } from '../services/dayPlanner';
 import { findPrayerCity, prayerBlocks } from '../services/prayerTimes';
 import { useAppTheme } from '../theme';
@@ -90,6 +97,47 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
       handleError(e, 'settings:test-alarm');
     }
   };
+  const [addingNudge, setAddingNudge] = useState(false);
+  const [newNudge, setNewNudge] = useState('');
+
+  /** Adds the user's own work-time reminder, already selected. */
+  const addCustomNudge = async () => {
+    const label = newNudge.trim();
+    if (!label) {
+      return;
+    }
+    const key = customNudgeKey(label);
+    try {
+      if (!settings.planWorkNudgeCustom.includes(key)) {
+        await update('planWorkNudgeCustom', [...settings.planWorkNudgeCustom, key]);
+      }
+      if (!settings.planWorkNudges.includes(key)) {
+        await updatePlanner('planWorkNudges', [...settings.planWorkNudges, key]);
+      }
+      setNewNudge('');
+      setAddingNudge(false);
+    } catch (e) {
+      handleError(e, 'settings:nudge-add');
+    }
+  };
+
+  const removeCustomNudge = (key: string, label: string) =>
+    Alert.alert(tr('Delete this reminder?'), label, [
+      { text: tr('Cancel'), style: 'cancel' },
+      {
+        text: tr('Delete'),
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await update('planWorkNudgeCustom', settings.planWorkNudgeCustom.filter(k => k !== key));
+            await updatePlanner('planWorkNudges', settings.planWorkNudges.filter(k => k !== key));
+          } catch (e) {
+            handleError(e, 'settings:nudge-remove');
+          }
+        },
+      },
+    ]);
+
   const prayerCity = findPrayerCity(settings.planPrayerCity);
   const todayPrayers = prayerCity ? prayerBlocks(prayerCity, Date.now(), settings.planPrayerMinutes) : [];
 
@@ -323,8 +371,9 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
           {tr('Small reminders while you work, one at a time')}
         </AppText>
         <View style={styles.wrap}>
-          {WORK_NUDGES.map(nudge => {
+          {[...WORK_NUDGES, ...settings.planWorkNudgeCustom.map(key => workNudge(key)!).filter(Boolean)].map(nudge => {
             const selected = settings.planWorkNudges.includes(nudge.key);
+            const custom = nudge.key.startsWith(CUSTOM_NUDGE_PREFIX);
             return (
               <Chip
                 key={nudge.key}
@@ -338,10 +387,34 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
                       : [...settings.planWorkNudges, nudge.key],
                   )
                 }
+                onLongPress={custom ? () => removeCustomNudge(nudge.key, nudge.label) : undefined}
               />
             );
           })}
+          {settings.planWorkNudgeCustom.length < MAX_CUSTOM_NUDGES ? (
+            <Chip label={tr('Other')} icon="plus" selected={addingNudge} onPress={() => setAddingNudge(v => !v)} />
+          ) : null}
         </View>
+        {addingNudge ? (
+          <View style={[styles.row, { marginTop: spacing.xs }]}>
+            <View style={styles.flex}>
+              <TextField
+                label={tr('Your reminder')}
+                value={newNudge}
+                onChangeText={setNewNudge}
+                placeholder={tr('e.g. Check my posture, Make a coffee')}
+                maxLength={MAX_CUSTOM_NUDGE_LENGTH}
+                onSubmitEditing={addCustomNudge}
+                returnKeyType="done"
+                autoFocus
+              />
+            </View>
+            <Button title={tr('Add')} icon="plus" compact onPress={addCustomNudge} style={{ marginLeft: spacing.sm, marginTop: spacing.xs }} />
+          </View>
+        ) : null}
+        {settings.planWorkNudgeCustom.length > 0 ? (
+          <AppText variant="caption" tone="muted">{tr('Long-press one of your reminders to delete it.')}</AppText>
+        ) : null}
         {settings.planWorkNudges.length > 0 ? (
           <>
             <AppText variant="caption" tone="secondary" style={{ marginVertical: spacing.sm }}>{tr('Every')}</AppText>
@@ -560,6 +633,8 @@ export function SettingsScreen({ navigation }: RootStackScreenProps<'Settings'>)
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  row: { flexDirection: 'row', alignItems: 'flex-start' },
+  flex: { flex: 1 },
   prayers: { flexDirection: 'row', justifyContent: 'space-between' },
   prayer: { alignItems: 'center' },
 });

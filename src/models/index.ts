@@ -160,6 +160,8 @@ export interface AppSettings {
   /** Small reminders during work hours (keys of WORK_NUDGES: water, walk...), cycled. */
   planWorkNudges: string[];
   planWorkNudgeEveryMin: number;
+  /** The user's own work-time reminders ("custom:<label>" keys), selected or not. */
+  planWorkNudgeCustom: string[];
   /** When the last backup file was saved (epoch ms), or null. */
   lastBackupAt: number | null;
 }
